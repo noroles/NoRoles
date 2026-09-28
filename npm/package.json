@@ -1,0 +1,16 @@
+{
+  "name": "noroles",
+  "version": "0.2.2",
+  "description": "NoRoles: run a company of people and AI agents on permissions instead of roles. Start a company, ask for a yes, give agents only the keys their mandate allows.",
+  "type": "module",
+  "bin": { "noroles": "bin/noroles.js" },
+  "files": ["bin", "src", "templates", "README.md", "LICENSE"],
+  "scripts": { "test": "node --test test/*.test.js" },
+  "dependencies": { "yaml": "2.9.1" },
+  "homepage": "https://noroles.com",
+  "repository": { "type": "git", "url": "git+https://github.com/noroles/noroles.git" },
+  "keywords": ["ai-agents", "permissions", "approvals", "agent-safety", "organization", "no-roles"],
+  "author": "Ilia Cherepanov",
+  "license": "MIT",
+  "engines": { "node": ">=20" }
+}
