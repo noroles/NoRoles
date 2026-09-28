@@ -57,4 +57,4 @@ What the code enforces today:
 
 Not yet: the output guard is pattern-based, so it catches common formats, not every kind of personal data. Also not yet: watching real outside systems (bank, Stripe, social accounts) for changes made around NoRoles, short-lived keys issued per mandate, a web or phone app for answering.
 
-The full model is in [SPEC.md](https://github.com/noroles/noroles/blob/main/SPEC.md). MIT licensed.
+The full model is in [SPEC.md](https://github.com/noroles/NoRoles/blob/main/SPEC.md). MIT licensed.

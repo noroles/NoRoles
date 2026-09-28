@@ -8,7 +8,7 @@
   "scripts": { "test": "node --test test/*.test.js" },
   "dependencies": { "yaml": "2.9.1" },
   "homepage": "https://noroles.com",
-  "repository": { "type": "git", "url": "git+https://github.com/noroles/noroles.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/noroles/NoRoles.git" },
   "keywords": ["ai-agents", "permissions", "approvals", "agent-safety", "organization", "no-roles"],
   "author": "Ilia Cherepanov",
   "license": "MIT",
