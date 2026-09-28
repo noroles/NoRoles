@@ -14,6 +14,19 @@ That creates a git repo with:
 - `credentials.md`: which key can exercise which permission. Values stay in `.noroles/secrets.env`.
 - `AGENTS.md`, `CLAUDE.md` and a Claude Code skill, so an agent knows how to work here on its first read.
 
+## Put NoRoles in the call path
+
+```bash
+noroles mcp-config first-website --as me-agent > .mcp.json   # Claude Code then reaches its tools only through NoRoles
+```
+
+`noroles mcp` is an MCP server that starts the real MCP servers listed in `servers.md` and stands between them and the agent. The agent never gets their keys. Every call is checked, whatever the agent decides:
+
+- a tool its server marks read-only, or non-destructive and closed-world, runs at once;
+- a tool mapped in `servers.md` to a permission becomes a request for a yes; nothing reaches the tool until a person signs, and the yes covers only those exact arguments, once;
+- a destructive tool needs `destroy`; any other tool that can change things outside and is not mapped is refused;
+- results are checked before the agent sees them: keys are always removed, and emails, phone numbers, card numbers and IBANs are removed unless the mandate can `data.export`.
+
 ## How work runs
 
 ```bash
@@ -42,6 +55,6 @@ What the code enforces today:
 - `check` enforces one owner per target, parts inside their parent, no `needs` cycles, at most 90 days per mandate, and keys that match `can`.
 - Every step is a git commit.
 
-Not yet: watching real outside systems (bank, Stripe, social accounts) for changes made around NoRoles, short-lived keys issued per mandate, a web or phone app for answering.
+Not yet: the output guard is pattern-based, so it catches common formats, not every kind of personal data. Also not yet: watching real outside systems (bank, Stripe, social accounts) for changes made around NoRoles, short-lived keys issued per mandate, a web or phone app for answering.
 
 The full model is in [SPEC.md](https://github.com/noroles/noroles/blob/main/SPEC.md). MIT licensed.

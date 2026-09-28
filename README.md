@@ -25,6 +25,7 @@ noroles ask --as me-agent --mandate first-website --permission money.spend \
 noroles yes <id>                 # a person, in a terminal, sees the exact action and signs
 noroles do <id>                  # runs the approved command once, with only its own key
 noroles run first-website --as me-agent -- claude
+noroles mcp-config first-website --as me-agent > .mcp.json   # every tool call goes through NoRoles
 ```
 
 See [`npm/README.md`](npm/README.md) for what the code enforces today and what it does not yet.

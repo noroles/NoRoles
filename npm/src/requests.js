@@ -333,3 +333,13 @@ export function audit(dir, now = new Date()) {
   if (opened) commit(dir, `audit: ${opened} new incident(s)`);
   return found;
 }
+
+/** Record that an approved action was carried out (used by the MCP gateway). */
+export function markDone(dir, { id, result, now = new Date() }) {
+  const c = load(dir);
+  const r = c.requests[id];
+  r.status = 'done';
+  r.done = { at: now.toISOString(), result: result ?? null };
+  save(c, r);
+  commit(dir, `did ${id} through the gateway`);
+}

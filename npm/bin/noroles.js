@@ -26,6 +26,8 @@ const HELP = `NoRoles: permissions instead of roles, for people and AI agents.
   noroles keygen               create your signing key (once per person)
   noroles stop <mandate> --reason "<why>"   break glass: anyone can stop a mandate
   noroles resume <mandate>     ask the holder to lift a stop
+  noroles mcp <mandate> --as <agent>   be the agent's MCP server: every tool call is checked
+  noroles mcp-config <mandate> --as <agent>   print the .mcp.json entry for Claude Code
   noroles audit                check every signature and find changes made outside NoRoles
   noroles resolve <incident> "<what happened>"
   noroles do <id>              carry out an approved action, once
@@ -223,6 +225,18 @@ async function main() {
       case 'resume': { const dir = findDir(); const c = load(dir); const r = resume(dir, { mandate: o._[0] || fail('which mandate?'), asker: asker(c, o.as) }); console.log(show(r) + `\nThe holder answers with \`noroles yes ${r.id}\`.`); break; }
       case 'audit': { const f = audit(findDir()); for (const x of f) console.log(`✗ ${x.what}`); if (!f.length) console.log('Every answer is validly signed and every change went through NoRoles.'); process.exit(f.length ? 1 : 0); }
       case 'resolve': { needTerminal(); const dir = findDir(); const c = load(dir); const who = me(c) || fail('your git email is not in permissions.md people'); resolveIncident(dir, { id: o._[0] || fail('which incident?'), who, note: o._.slice(1).join(' ') }); console.log('Resolved.'); break; }
+      case 'mcp': {
+        const dir = findDir();
+        const { gateway } = await import('../src/mcp.js');
+        await gateway(dir, { mandate: o._[0] || fail('which mandate?'), as: o.as || fail('--as <agent> is required'), log: (e) => console.error(`noroles: ${e.message}`) });
+        return;
+      }
+      case 'mcp-config': {
+        const mandate = o._[0] || fail('which mandate?'); const as = o.as || fail('--as <agent> is required');
+        console.log(JSON.stringify({ mcpServers: { noroles: { command: 'npx', args: ['noroles', 'mcp', mandate, '--as', as] } } }, null, 2));
+        console.error('Put this in .mcp.json in the company folder. Give the agent no other MCP servers: every tool should go through NoRoles.');
+        break;
+      }
       case 'propose-meta': { const dir = findDir(); const c = load(dir); const r = proposeMeta(dir, { asker: asker(c, o.as) }); console.log(show(r)); break; }
       default: fail(`unknown command "${cmd}". Run \`noroles help\`.`);
     }

@@ -16,6 +16,8 @@ While you work:
 - If something is going wrong (money, words or data leaving that should not), stop the mandate at once:
   `npx noroles stop <mandate> --as <your agent id> --reason "<what you saw>"`. Stopping is always allowed. Only the holder resumes it.
 
+If your tools come through the `noroles` MCP server, it checks every call itself. When a result says a yes is needed, stop, tell your person the request id, and call again with exactly the same arguments after they approve.
+
 Never:
 - edit `root.md`, `permissions.md`, `credentials.md`, anything in `mandates/`, `requests/` or `ledger.json`;
 - run `noroles yes` or `noroles no`: only people answer;

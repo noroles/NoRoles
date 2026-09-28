@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import YAML from 'yaml';
 import { verify, statement } from './keys.js';
 
-export const META_FILES = ['root.md', 'permissions.md', 'credentials.md'];
+export const META_FILES = ['root.md', 'permissions.md', 'credentials.md', 'servers.md'];
 const DAY = 86400000;
 
 export const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -40,6 +40,8 @@ export function load(dir) {
   const perm = yamlBlock(readText(dir, 'permissions.md'), 'permissions.md');
   const creds = fs.existsSync(path.join(dir, 'credentials.md'))
     ? yamlBlock(readText(dir, 'credentials.md'), 'credentials.md') : {};
+  const servers = fs.existsSync(path.join(dir, 'servers.md'))
+    ? yamlBlock(readText(dir, 'servers.md'), 'servers.md').servers || {} : {};
   const mandates = {};
   const mdir = path.join(dir, 'mandates');
   for (const f of fs.existsSync(mdir) ? fs.readdirSync(mdir).filter((f) => f.endsWith('.md')).sort() : []) {
@@ -65,6 +67,7 @@ export function load(dir) {
     groups: perm.groups || {},
     permissions: perm.permissions || {},
     credentials: creds.credentials || {},
+    servers,
     mandates, rules, requests, ledger,
   };
 }
@@ -89,8 +92,8 @@ export function principal(c, who) {
 export function mandateCan(m) {
   const can = m.can || {};
   const perms = {};
-  for (const [k, v] of Object.entries(can)) if (k !== 'tools') perms[k] = v || {};
-  return { perms, tools: can.tools || [] };
+  for (const [k, v] of Object.entries(can)) if (k !== 'tools' && k !== 'servers') perms[k] = v || {};
+  return { perms, tools: can.tools || [], servers: can.servers || [] };
 }
 
 function family(c, name) {
@@ -267,6 +270,11 @@ export function check(c, now = new Date()) {
     else if (hs.length < q) warn(`permissions.md ${p}`, `quorum ${q} but only ${hs.length} holder(s): each missing yes becomes a 24h wait for the observer`);
     for (const h of def.holders || []) if (c.agents[h]) err(`permissions.md ${p}`, `agent "${h}" is listed as a holder: agents never hold permissions`);
   }
+  for (const [name, sv] of Object.entries(c.servers)) {
+    if (!sv.command) err(`servers.md ${name}`, 'no command');
+    for (const cred of Object.values(sv.env || {})) if (!c.credentials[cred]) err(`servers.md ${name}`, `env uses unknown credential "${cred}"`);
+    for (const [t, rule] of Object.entries(sv.tools || {})) for (const p of rule?.permissions || []) if (!c.permissions[p]) err(`servers.md ${name}.${t}`, `unknown permission "${p}"`);
+  }
   for (const [name, cr] of Object.entries(c.credentials)) {
     for (const p of cr.exercises || []) if (!c.permissions[p]) err(`credentials.md ${name}`, `exercises unknown permission "${p}"`);
     if (!cr.env) err(`credentials.md ${name}`, 'no env variable named');
@@ -299,6 +307,7 @@ export function check(c, now = new Date()) {
       if (!cr) { err(at, `tool "${t}" is not in credentials.md`); continue; }
       for (const p of cr.exercises || []) if (!perms[p]) err(at, `tool "${t}" can exercise ${p}, but can does not include ${p}`);
     }
+    for (const sv of mandateCan(m).servers) if (!c.servers[sv]) err(at, `server "${sv}" is not in servers.md`);
     for (const n of m.needs || []) if (!c.mandates[n]) err(at, `needs unknown mandate "${n}"`);
     for (const part of m.parts || []) {
       const child = c.mandates[part];
