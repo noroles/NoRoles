@@ -21,7 +21,7 @@ permissions:
   price.change:    { holders: [founders], each: item }
   contract.sign:   { holders: [founders], human_only: true, each: item }
   speak.external:  { holders: [founders], each: batch }
-  prod.change:     { holders: [founders] }
+  prod.change:     { holders: [founders], each: item }
   data.export:     { holders: [founders], each: item }
   access.change:   { holders: [founders] }
   people.engage:   { holders: [founders] }
