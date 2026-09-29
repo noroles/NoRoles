@@ -6,5 +6,6 @@ pub mod hook;
 pub mod keys;
 pub mod notify;
 pub mod requests;
+pub mod runs;
 pub mod serve;
 pub mod util;

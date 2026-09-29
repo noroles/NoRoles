@@ -109,6 +109,28 @@ td.c{text-align:center}
 .tag{font:500 12.5px var(--mono)}
 .tag.open{color:var(--faint)}.tag.asked{color:var(--accent)}.tag.approved,.tag.done{color:var(--ok)}.tag.refused,.tag.denied,.tag.expired,.tag.void{color:var(--alarm)}
 .inc{border:1px solid var(--alarm);background:var(--paper);padding:14px 18px;margin-bottom:10px}
+/* agents */
+.task{background:var(--paper);border:1px solid var(--line);padding:20px 22px;display:grid;gap:12px;margin-bottom:28px}
+.task textarea{min-height:92px;resize:vertical;line-height:1.45}
+.task .row{border-top:0;margin-top:0;padding-top:0}
+select.field{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--soft) 50%),linear-gradient(135deg,var(--soft) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px;width:auto;min-width:260px}
+.run{background:var(--paper);border:1px solid var(--line);margin-bottom:14px}
+.run .hd{padding:16px 20px;display:grid;gap:4px;border-bottom:1px solid var(--line2)}
+.run .tk{font:600 21px/1.2 var(--display);overflow-wrap:anywhere}
+.run .ev{grid-template-columns:24px minmax(0,1fr);padding:8px 20px}
+.run .ev .ic{color:var(--faint);font:500 13px var(--mono)}
+.run .ev.noroles{background:var(--wash)}
+.run .ev.noroles .ic{color:var(--accent)}
+.run .ev.error .ic,.run .ev.error{color:var(--alarm)}
+.run .ev.say{font-size:15.5px}
+.run .final{padding:14px 20px;border-top:1px solid var(--line2);white-space:pre-wrap;overflow-wrap:anywhere}
+.run .ft{padding:12px 20px;border-top:1px solid var(--line2);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.st{font:500 12.5px var(--mono);padding:2px 7px;border:1px solid currentColor}
+.st.working{color:var(--accent)}.st.waiting{color:var(--alarm)}.st.done{color:var(--ok)}.st.failed,.st.stopped{color:var(--faint)}
+.pulse{display:inline-block;width:8px;height:8px;background:var(--accent);margin-right:6px;animation:pl 1.2s infinite}
+@keyframes pl{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+.waitfor{border-left:3px solid var(--accent);background:var(--wash);padding:8px 12px;margin:0 0 12px;font-size:14.5px}
 @media (max-width:860px){
   .app{grid-template-columns:1fr}
   nav{position:sticky;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 12px;gap:0;border-right:0;border-bottom:1px solid var(--line);background:var(--bg);z-index:2}
@@ -127,6 +149,7 @@ td.c{text-align:center}
     <div class="brand">NoRoles</div>
     <div class="co" id="co"></div>
     <a href="#inbox" data-v="inbox"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11h5l1.5 2.5h3L13 11h5M2 11l2.5-7h11L18 11v6H2z"/></svg>Inbox<span class="n" id="n-inbox"></span></a>
+    <a href="#agents" data-v="agents"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="14" height="10"/><path d="M10 2v4M7 11h.01M13 11h.01M7.5 14h5"/></svg>Agents<span class="n" id="n-run"></span></a>
     <a href="#mandates" data-v="mandates"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2h9l3 3v13H4zM7 8h6M7 11h6M7 14h4"/></svg>Mandates</a>
     <a href="#people" data-v="people"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="3"/><path d="M1.5 17c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5M13 4.5a3 3 0 010 5.5M15 12.8c1.8.6 3 2 3.4 4.2"/></svg>People</a>
     <a href="#activity" data-v="activity"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 10h4l2.5-6 4 12 2.5-6h4"/></svg>Activity<span class="n" id="n-inc"></span></a>
@@ -193,6 +216,7 @@ function reqCard(r) {
   return `<article class="req" id="r-${r.id}">
     <div class="main">
       <div class="meta"><b>${esc(r.mandate || 'company')}</b><span>${esc((r.permissions || []).join(', ') || 'no permission')}</span><span>asked by ${esc(r.asker)}</span><span title="${esc(r.created)}">${ago(r.created)}</span>${r.escalated ? '<span class="err">passed to root: nobody answered in time</span>' : ''}</div>
+      ${(() => { const w = (S.runs || []).find((x) => (x.asked || []).some((a) => a.id === r.id)); return w ? `<div class="waitfor">The agent waits for this to go on with: ${esc(w.task)}</div>` : ''; })()}
       <div class="what">${esc(title)}</div>
       ${r.flags.length ? `<div class="flags">${r.flags.map((x) => `<div>${ICON_FLAG}<span>${esc(x)}</span></div>`).join('')}</div>` : ''}
       ${f.length ? `<dl class="fields">${f.map(([k, v, c]) => `<dt>${esc(k)}</dt><dd class="${c || ''}">${esc(v)}</dd>`).join('')}</dl>` : ''}
@@ -270,7 +294,49 @@ function activity() {
   return h;
 }
 
-const VIEWS = { inbox, mandates, people, activity };
+// ---------- agents ----------
+function runCard(r) {
+  const cls = r.status === 'working' ? 'working' : r.status === 'waiting for you' ? 'waiting' : r.status;
+  const st = ui['run-' + r.id] || {};
+  const ev = r.events.map((e) => {
+    if (e.kind === 'say') return `<div class="ev say"><span class="ic">›</span><span>${esc(e.text)}</span></div>`;
+    if (e.kind === 'tool') return `<div class="ev"><span class="ic">→</span><span class="mono">${esc(toolLabel(e.name))}</span></div>`;
+    if (e.kind === 'noroles') return `<div class="ev noroles"><span class="ic">■</span><span>${esc(e.text)}</span></div>`;
+    if (e.kind === 'error') return `<div class="ev error"><span class="ic">×</span><span>${esc(e.text)}</span></div>`;
+    return `<div class="ev"><span class="ic">·</span><span class="muted">${esc(e.text)}</span></div>`;
+  }).join('');
+  let ft = '';
+  if (r.status === 'working') ft = `<span class="muted"><span class="pulse"></span>working…</span><span style="flex:1"></span><button class="btn small" data-act="runstop" data-id="${r.id}">Stop</button>`;
+  else if (r.status === 'waiting for you') ft = `<span class="err">It needs your yes to go on.</span><span style="flex:1"></span><a class="btn small yes" href="#inbox">Answer in Inbox</a>`;
+  else if (st.mode === 'more') ft = `<textarea class="field" id="more-${r.id}" placeholder="Tell the agent what to do next" style="flex:1;min-width:240px;min-height:60px"></textarea><button class="btn small yes" data-act="runmore" data-id="${r.id}">Continue</button><button class="btn small" data-act="runcancel" data-id="${r.id}">Back</button>`;
+  else ft = `<span class="muted">${r.cost ? '$' + r.cost + ' · ' : ''}${r.ended ? 'ended ' + ago(r.ended) : ''}</span><span style="flex:1"></span><button class="btn small" data-act="runform" data-id="${r.id}">Continue this task</button>`;
+  return `<article class="run">
+    <div class="hd"><div class="meta"><b>${esc(r.mandate)}</b><span>${esc(r.agent)}</span><span title="${esc(r.started)}">${ago(r.started)}</span><span class="st ${cls}">${esc(r.status)}</span></div><div class="tk">${esc(r.task)}</div></div>
+    ${r.event_count > r.events.length ? `<div class="ev"><span></span><span class="muted">${r.event_count - r.events.length} earlier steps</span></div>` : ''}
+    <div class="feed" style="border:0">${ev || '<div class="ev"><span></span><span class="muted">Starting…</span></div>'}</div>
+    ${r.result && r.status !== 'working' ? `<div class="final">${esc(r.result)}</div>` : ''}
+    ${r.error ? `<div class="final err">${esc(r.error)}</div>` : ''}
+    <div class="ft">${ft}${st.err ? `<span class="err">${esc(st.err)}</span>` : ''}</div>
+  </article>`;
+}
+
+function agents() {
+  const active = S.mandates.filter((m) => m.active);
+  const st = ui.task || {};
+  let h = `<h1>Agents</h1><p class="lead">Give an agent a task inside a mandate. It works on its own here on this computer, with your tools. Anything it can undo, it just does; anything it can’t lands in your Inbox, and after your answer it goes on by itself.</p>`;
+  if (!S.claude) h += `<div class="banner" style="border-color:var(--accent);background:var(--wash);color:var(--ink)"><b>Claude is not signed in on this computer.</b> Agents run on your Claude account. ${st.login ? 'A sign-in page should have opened in your browser; this updates once you are in.' : ''}${S.login_url ? ` If it did not open: <a href="${esc(S.login_url)}" target="_blank" rel="noopener" style="color:var(--accent)">open the sign-in page</a>.` : ''}<div class="row" style="border:0;padding:8px 0 0;margin:0"><button class="btn small yes" data-act="login">Sign in</button></div></div>`;
+  if (!active.length) h += `<div class="banner">No mandate is open. Open one in Mandates first.</div>`;
+  else h += `<div class="task">
+    <label class="muted" for="task-text">Task</label>
+    <textarea class="field" id="task-text" placeholder="For example: find partner emails from this week that still need an answer and draft the replies">${esc(st.text || '')}</textarea>
+    <div class="row"><select class="field" id="task-mandate">${active.map((m) => `<option value="${esc(m.name)}" ${st.mandate === m.name ? 'selected' : ''}>${esc(m.name)}: ${esc(m.intent)}</option>`).join('')}</select><span style="flex:1"></span><button class="btn yes" data-act="run" ${S.claude ? '' : 'disabled'}>Start</button></div>
+    ${st.err ? `<div class="err">${esc(st.err)}</div>` : ''}
+  </div>`;
+  h += S.runs.length ? S.runs.map(runCard).join('') : `<div class="empty"><div class="big">No tasks yet</div><p class="muted">Write one above. You will see every step here, and every call NoRoles stopped.</p></div>`;
+  return h;
+}
+
+const VIEWS = { inbox, agents, mandates, people, activity };
 function render(force) {
   if (!S) return;
   const typing = document.activeElement && document.activeElement.matches('input,textarea');
@@ -281,6 +347,7 @@ function render(force) {
   $('#me').textContent = S.me ? 'You are ' + S.me : '';
   $('#n-inbox').textContent = S.pending.filter((r) => (r.progress || []).some((p) => p.can.includes(S.me))).length || '';
   $('#n-inc').textContent = S.incidents.length || '';
+  $('#n-run').textContent = S.runs.filter((r) => r.status === 'working').length || '';
   document.title = (S.pending.length ? `(${S.pending.length}) ` : '') + 'NoRoles';
   document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.v === view));
   $('#view').innerHTML = VIEWS[view]();
@@ -311,11 +378,22 @@ async function run(act, id) {
     if (act === 'stop') { await api('/api/stop', { mandate: id, reason: $('#stop-' + id)?.value || '' }); delete ui['m-' + id]; }
     if (act === 'resume') { const r = await api('/api/resume', { mandate: id }); view = 'inbox'; location.hash = 'inbox'; if (r.id) ui[r.id] = { mode: 'yes' }; }
     if (act === 'resolveform') return set('i-' + id, { mode: 'resolve' });
+    if (act === 'login') { await api('/api/login', {}); return set('task', { login: true }); }
+    if (act === 'run') {
+      const text = $('#task-text').value, mandate = $('#task-mandate').value;
+      ui.task = { text, mandate };
+      await api('/api/run', { mandate, task: text });
+      ui.task = { mandate };
+    }
+    if (act === 'runstop') await api('/api/run/stop', { id });
+    if (act === 'runform') return set('run-' + id, { mode: 'more', err: '' });
+    if (act === 'runcancel') { delete ui['run-' + id]; return render(true); }
+    if (act === 'runmore') { await api('/api/run/continue', { id, note: $('#more-' + id).value }); delete ui['run-' + id]; }
     if (act === 'resolve') { await api('/api/resolve', { id, note: $('#note-' + id)?.value || '', passphrase: $('#pw-i-' + id)?.value || '' }); delete ui['i-' + id]; }
     document.activeElement?.blur();
     await refresh(true);
   } catch (e) {
-    const k = ['sign', 'decline'].includes(act) ? id : ['stop', 'open', 'resume'].includes(act) ? 'm-' + id : act === 'resolve' ? 'i-' + id : id;
+    const k = ['sign', 'decline'].includes(act) ? id : ['stop', 'open', 'resume'].includes(act) ? 'm-' + id : act === 'resolve' ? 'i-' + id : ['run', 'login'].includes(act) ? 'task' : act.startsWith('run') ? 'run-' + id : id;
     ui[k] = { ...(ui[k] || {}), err: e.message.replace(/^wrong passphrase.*/i, 'Wrong passphrase: nothing was recorded.') };
     render(true);
   }

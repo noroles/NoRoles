@@ -73,6 +73,7 @@ pub fn state(dir: &Path, me: Option<&str>) -> Result<V, String> {
         "permissions": permissions, "people": people, "agents": agents,
         "tools": c.tools.iter().map(|(k, v)| json!({ "pattern": k, "rule": v })).collect::<Vec<_>>(),
         "incidents": incidents, "problems": problems, "calls": read_calls(dir, 60),
+        "claude": crate::runs::signed_in(), "login_url": if crate::runs::signed_in() { None } else { crate::runs::login_url(dir) }, "runs": crate::runs::list(dir),
     }))
 }
 
@@ -87,6 +88,9 @@ fn act(dir: &Path, me: &str, path: &str, body: &V) -> Result<V, String> {
             let proof = if s(c.people.get(me).unwrap_or(&V::Null), "key").is_some() { Proof::Passphrase(&pass) } else { Proof::None };
             let reason = st("reason");
             let r = requests::decide(dir, &st("id"), me, yes, Some(reason.as_str()).filter(|x| !x.is_empty()), proof, now)?;
+            // an agent waiting on this answer goes on by itself
+            let settled = status(&r) == "approved" || status(&r) == "denied";
+            if settled { crate::runs::answered(dir, &st("id"), status(&r) == "approved", &reason); }
             Ok(json!({ "id": g(&r, "id"), "status": g(&r, "status") }))
         }
         "/api/open" => { let r = requests::open_mandate(dir, &st("mandate"), me, now)?; Ok(json!({ "id": g(&r, "id"), "status": g(&r, "status") })) }
@@ -100,6 +104,10 @@ fn act(dir: &Path, me: &str, path: &str, body: &V) -> Result<V, String> {
             }
             requests::resolve_incident(dir, &st("id"), me, &st("note"), now)?; Ok(json!({ "ok": true }))
         }
+        "/api/run" => crate::runs::start(dir, &st("mandate"), &st("task")),
+        "/api/run/stop" => { crate::runs::stop(dir, &st("id"))?; Ok(json!({ "ok": true })) }
+        "/api/run/continue" => { crate::runs::resume(dir, &st("id"), &st("note"))?; Ok(json!({ "ok": true })) }
+        "/api/login" => { crate::runs::login(dir)?; Ok(json!({ "ok": true })) }
         _ => Err("no such action".into()),
     }
 }
