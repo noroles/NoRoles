@@ -9,6 +9,8 @@ import {
   effective, progress, complete, limitProblem, isApproved, eachFor, validAnswer, principal,
 } from './company.js';
 import { sign, statement } from './keys.js';
+import { flags } from './flags.js';
+import { notify } from './notify.js';
 
 const DAY = 86400000;
 export const actionHash = (a) => sha(canonical(a));
@@ -71,6 +73,11 @@ export function ask(dir, { mandate, permissions, asker, summary, amount, currenc
   }
   save(c, r);
   commit(dir, `ask ${r.id} ${perms.join(',')} for ${mandate}: ${action.summary}${r.covered_by ? ` (covered by ${r.covered_by})` : ''}`);
+  if (r.status === 'pending') {
+    const f = flags(c, r);
+    const money = perms.some((p) => p.startsWith('money.'));
+    notify(`NoRoles: ${asker} needs a yes`, `${perms.join(', ')}: ${action.summary}${action.amount != null ? ` (${action.amount}${action.currency ? ' ' + action.currency : ''})` : ''}${f.length ? `\n! ${f.join('\n! ')}` : ''}\nnoroles yes ${r.id}`, { urgent: money || f.length > 0 });
+  }
   return r;
 }
 
@@ -174,6 +181,7 @@ function openIncident(c, { key, mandate, what, now }) {
   const m = c.mandates[mandate];
   fs.mkdirSync(path.dirname(f), { recursive: true });
   fs.writeFileSync(f, YAML.stringify({ id: key, mandate, what, opened: now.toISOString(), holder: m?.holder || c.root.members[0] || null, then: c.root.members, resolved: null }));
+  notify('NoRoles: incident', `${mandate ? mandate + ': ' : ''}${what}`, { urgent: true });
   return true;
 }
 

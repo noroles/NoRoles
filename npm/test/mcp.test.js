@@ -16,6 +16,7 @@ import { keygen } from '../src/keys.js';
 
 const FAKE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'fake-server.js');
 const PASS = 'correct horse battery';
+process.env.NOROLES_NOTIFY_LOG = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'noroles-notes-')), 'notes.jsonl');
 process.env.NOROLES_KEYS = fs.mkdtempSync(path.join(os.tmpdir(), 'noroles-keys-'));
 const KEY = keygen('ana', PASS);
 
@@ -182,4 +183,15 @@ test('output guard: personal data is removed unless the mandate can data.export;
 
 test('output guard: a number that fails the card checksum is left alone', () => {
   assert.equal(guard('order 1234 5678 9012 3456', { canExport: false }).text, 'order 1234 5678 9012 3456');
+});
+
+test('output guard: structured results are checked too, and unknown fields are dropped', async () => {
+  const { dir } = company();
+  const g = await connect(dir);
+  const r = await g.callTool('fake__get_customer_json', {});
+  const all = JSON.stringify(r);
+  assert.doesNotMatch(all, /ana\.lima@example\.com|sk_live_/);
+  assert.equal(r.structuredContent.result[0].name, 'Ana Lima');
+  assert.equal(r._meta, undefined);
+  g.stop();
 });

@@ -8,6 +8,8 @@ import readline from 'node:readline';
 import { spawn } from 'node:child_process';
 import { load, mandateCan, mandateState, isApproved, sha, canonical } from './company.js';
 import { ask, markDone, readSecrets } from './requests.js';
+import { flags } from './flags.js';
+import { notify } from './notify.js';
 
 const PROTOCOL = '2025-06-18';
 const SEP = '__';
@@ -31,13 +33,14 @@ class Upstream {
     const id = this.next++;
     this.proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
     return new Promise((resolve, reject) => {
-      this.waiting.set(id, { resolve, reject });
-      setTimeout(() => { if (this.waiting.delete(id)) reject(new Error(`${this.name}: ${method} timed out`)); }, 120000);
+      const timer = setTimeout(() => { if (this.waiting.delete(id)) reject(new Error(`${this.name}: ${method} timed out`)); }, 120000);
+      timer.unref();
+      this.waiting.set(id, { resolve: (v) => { clearTimeout(timer); resolve(v); }, reject: (e) => { clearTimeout(timer); reject(e); } });
     });
   }
   notify(method, params) { this.proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', method, params }) + '\n'); }
   async start() {
-    await this.request('initialize', { protocolVersion: PROTOCOL, capabilities: {}, clientInfo: { name: 'noroles', version: '0.3' } });
+    await this.request('initialize', { protocolVersion: PROTOCOL, capabilities: {}, clientInfo: { name: 'noroles', version: '0.4' } });
     this.notify('notifications/initialized', {});
     const { tools } = await this.request('tools/list', {});
     this.tools = tools || [];
@@ -130,6 +133,7 @@ export async function gateway(dir, { mandate, as, input = process.stdin, output 
 
     if (perms === null) {
       record({ tool: fullName, decision: 'refused', why: 'lasting, unmapped' });
+      notify(`NoRoles: refused ${as}`, `${mandate}: tried ${fullName}, which is not mapped in servers.md`, { urgent: true });
       return text(`NoRoles: ${fullName} can change things outside and servers.md does not say which permission it needs, so it is refused. Ask your person to map it in servers.md.`, true);
     }
     let requestId = null;
@@ -146,11 +150,13 @@ export async function gateway(dir, { mandate, as, input = process.stdin, output 
           r = ask(dir, { mandate, permissions: perms, asker: as, summary: `${sv}.${toolName} ${canonical(args ?? {})}`, amount: pick(args, rule.amount), currency: pick(args, rule.currency) || rule.currency_default || null, to: pick(args, rule.to), payload: env });
         } catch (e) {
           record({ tool: fullName, decision: 'refused', why: e.message });
+          notify(`NoRoles: refused ${as}`, `${mandate}: ${fullName}: ${e.message}`, { urgent: true });
           return text(`NoRoles: refused: ${e.message}. Nothing was done.`, true);
         }
         if (r.status !== 'approved') {
           record({ tool: fullName, decision: 'asked', request: r.id });
-          return text(`NoRoles: ${fullName} needs a yes (${perms.join(', ')}). Asked as ${r.id}; nothing was done yet. Tell your person to run \`noroles yes ${r.id}\`, then call this tool again with exactly the same arguments.`);
+          const f = flags(load(dir), r);
+          return text(`NoRoles: ${fullName} needs a yes (${perms.join(', ')}). Asked as ${r.id}; nothing was done yet.${f.length ? ` Your person will see: ${f.join('; ')}.` : ''} Tell your person to run \`noroles yes ${r.id}\`, then call this tool again with exactly the same arguments.`);
         }
         requestId = r.id;
       }
@@ -165,9 +171,17 @@ export async function gateway(dir, { mandate, as, input = process.stdin, output 
       for (const [k, v] of Object.entries(g.found)) found[k] = (found[k] || 0) + v;
       return { ...p, text: g.text };
     });
+    // structured results carry the same data as JSON: every string in them is checked the same way
+    const deep = (v) => {
+      if (typeof v === 'string') { const g = guard(v, { canExport }); for (const [k, n] of Object.entries(g.found)) found[k] = (found[k] || 0) + n; return g.text; }
+      if (Array.isArray(v)) return v.map(deep);
+      if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deep(x)]));
+      return v;
+    };
+    const structured = res.structuredContent === undefined ? undefined : deep(res.structuredContent);
     if (Object.keys(found).length) content.push({ type: 'text', text: `NoRoles removed ${Object.entries(found).map(([k, v]) => `${v} ${k}`).join(', ')} from this result${canExport ? '' : ' (this mandate cannot data.export)'}.` });
     record({ tool: fullName, decision: requestId ? `approved ${requestId}` : 'open', removed: found });
-    return { ...res, content };
+    return { ...(res.isError ? { isError: true } : {}), content, ...(structured === undefined ? {} : { structuredContent: structured }) };
   }
 
   const rl = readline.createInterface({ input });
@@ -176,7 +190,7 @@ export async function gateway(dir, { mandate, as, input = process.stdin, output 
     let msg; try { msg = JSON.parse(line); } catch { return; }
     if (msg.id === undefined) return;
     try {
-      if (msg.method === 'initialize') return send({ jsonrpc: '2.0', id: msg.id, result: { protocolVersion: msg.params?.protocolVersion || PROTOCOL, capabilities: { tools: {} }, serverInfo: { name: 'noroles', version: '0.3' }, instructions: `You work inside the NoRoles mandate "${mandate}". Open calls run at once. Lasting calls ask a person for a yes first: when a result says a yes is needed, stop, tell your person the request id, and call again with the same arguments after they approve.` } });
+      if (msg.method === 'initialize') return send({ jsonrpc: '2.0', id: msg.id, result: { protocolVersion: msg.params?.protocolVersion || PROTOCOL, capabilities: { tools: {} }, serverInfo: { name: 'noroles', version: '0.4' }, instructions: `You work inside the NoRoles mandate "${mandate}". Open calls run at once. Lasting calls ask a person for a yes first: when a result says a yes is needed, stop, tell your person the request id, and call again with the same arguments after they approve.` } });
       if (msg.method === 'ping') return send({ jsonrpc: '2.0', id: msg.id, result: {} });
       if (msg.method === 'tools/list') {
         const tools = [];

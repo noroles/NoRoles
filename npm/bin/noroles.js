@@ -9,6 +9,7 @@ import { init } from '../src/init.js';
 import { load, check, mandateState, sha, readText, META_FILES } from '../src/company.js';
 import { ask, openMandate, proposeMeta, decide, run, doAction, settle, effective, progress, stop, resume, audit, incidents, resolveIncident } from '../src/requests.js';
 import { keygen, keyPath } from '../src/keys.js';
+import { flags } from '../src/flags.js';
 
 const HELP = `NoRoles: permissions instead of roles, for people and AI agents.
 
@@ -103,7 +104,8 @@ function asker(c, flag) {
   return me(c) || fail('cannot tell who is asking: pass --as <person or agent>');
 }
 
-const show = (r) => {
+const warn = (s) => (process.stdout.isTTY ? `\x1b[1;31m${s}\x1b[0m` : s);
+const show = (r, c) => {
   const a = r.action;
   const lines = [`${bold(r.id)}  ${r.kind}  ${r.permissions.join(', ') || 'no permission'}${r.mandate ? `  mandate ${r.mandate}` : ''}`, `  asked by ${r.asker} at ${r.created}`];
   if (a.summary) lines.push(`  action:  ${a.summary}`);
@@ -115,6 +117,7 @@ const show = (r) => {
   if (a.hashes) lines.push(`  files:   ${Object.keys(a.hashes).join(', ')}`);
   if (a.items) a.items.forEach((it, i) => lines.push(`  item ${i + 1}:  ${it}`));
   if (r.covered_by) lines.push(`  covered by the yes that opened the mandate (${r.covered_by})`);
+  if (c) for (const f of flags(c, r)) lines.push(warn(`  ! ${f}`));
   return lines.join('\n');
 };
 
@@ -124,7 +127,7 @@ async function answer(yes, id, reason) {
   needTerminal();
   const who = me(c) || fail('your git email is not in permissions.md people');
   const r = c.requests[id] || fail(`no request ${id}`);
-  console.log('\n' + show(r) + '\n');
+  console.log('\n' + show(r, c) + '\n');
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: false });
   const typed = (await rl.question(`${who}, type "${yes ? 'yes' : 'no'}" to ${yes ? 'approve exactly this' : 'decline'}: `)).trim().toLowerCase();
   rl.close();
@@ -152,7 +155,7 @@ function status() {
   const pending = Object.values(c.requests).filter((r) => effective(c, r, now).status === 'pending');
   console.log('\n' + bold(`Waiting for a yes (${pending.length})`));
   for (const r of pending) {
-    console.log(show(r));
+    console.log(show(r, c));
     for (const p of progress(c, r, now)) console.log(dim(`  ${p.permission}: ${p.got.length}/${p.need} from ${p.can.join(', ') || 'nobody'}${p.wait_until ? `, then wait until ${p.wait_until.toISOString()}` : ''}`));
   }
   const approved = Object.values(c.requests).filter((r) => r.status === 'approved' && r.kind === 'action');
@@ -188,13 +191,13 @@ async function main() {
       case 'open': {
         const dir = findDir(); const c = load(dir);
         const r = openMandate(dir, { mandate: o._[0] || fail('which mandate?'), asker: asker(c, o.as) });
-        console.log(show(r) + `\n${r.status === 'approved' ? 'Open: it needs no permission.' : 'Waiting for its holders: they run `noroles yes ' + r.id + '`.'}`);
+        console.log(show(r, c) + `\n${r.status === 'approved' ? 'Open: it needs no permission.' : 'Waiting for its holders: they run `noroles yes ' + r.id + '`.'}`);
         break;
       }
       case 'ask': {
         const dir = findDir(); const c = load(dir);
         const r = ask(dir, { mandate: o.mandate || fail('--mandate is required'), permissions: o.permission || fail('--permission is required'), asker: asker(c, o.as), summary: o.summary || fail('--summary is required: the exact action'), items: o.item, amount: o.amount, currency: o.currency, to: o.to, payload: o.payload, tool: o.tool, command: o.command });
-        console.log(show(r) + (r.status === 'approved' ? `\nApproved: inside the mandate's limits, covered by its yes. Go ahead${r.action.command ? ` with \`noroles do ${r.id}\`` : ''}.` : `\nAsked. A holder answers with \`noroles yes ${r.id}\`. Do nothing lasting until then.`));
+        console.log(show(r, c) + (r.status === 'approved' ? `\nApproved: inside the mandate's limits, covered by its yes. Go ahead${r.action.command ? ` with \`noroles do ${r.id}\`` : ''}.` : `\nAsked. A holder answers with \`noroles yes ${r.id}\`. Do nothing lasting until then.`));
         break;
       }
       case 'yes': await answer(true, o._[0] || fail('which request?')); break;
@@ -222,7 +225,7 @@ async function main() {
         break;
       }
       case 'stop': { const dir = findDir(); const c = load(dir); const r = stop(dir, { mandate: o._[0] || fail('which mandate?'), asker: asker(c, o.as), reason: o.reason || o._.slice(1).join(' ') }); console.log(`Stopped ${r.mandate}. Its holder reviews within 24h; \`noroles resume ${r.mandate}\` asks them to lift it.`); break; }
-      case 'resume': { const dir = findDir(); const c = load(dir); const r = resume(dir, { mandate: o._[0] || fail('which mandate?'), asker: asker(c, o.as) }); console.log(show(r) + `\nThe holder answers with \`noroles yes ${r.id}\`.`); break; }
+      case 'resume': { const dir = findDir(); const c = load(dir); const r = resume(dir, { mandate: o._[0] || fail('which mandate?'), asker: asker(c, o.as) }); console.log(show(r, c) + `\nThe holder answers with \`noroles yes ${r.id}\`.`); break; }
       case 'audit': { const f = audit(findDir()); for (const x of f) console.log(`✗ ${x.what}`); if (!f.length) console.log('Every answer is validly signed and every change went through NoRoles.'); process.exit(f.length ? 1 : 0); }
       case 'resolve': { needTerminal(); const dir = findDir(); const c = load(dir); const who = me(c) || fail('your git email is not in permissions.md people'); resolveIncident(dir, { id: o._[0] || fail('which incident?'), who, note: o._.slice(1).join(' ') }); console.log('Resolved.'); break; }
       case 'mcp': {
@@ -237,7 +240,7 @@ async function main() {
         console.error('Put this in .mcp.json in the company folder. Give the agent no other MCP servers: every tool should go through NoRoles.');
         break;
       }
-      case 'propose-meta': { const dir = findDir(); const c = load(dir); const r = proposeMeta(dir, { asker: asker(c, o.as) }); console.log(show(r)); break; }
+      case 'propose-meta': { const dir = findDir(); const c = load(dir); const r = proposeMeta(dir, { asker: asker(c, o.as) }); console.log(show(r, c)); break; }
       default: fail(`unknown command "${cmd}". Run \`noroles help\`.`);
     }
   } catch (e) { fail(e.message); }

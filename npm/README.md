@@ -25,7 +25,8 @@ noroles mcp-config first-website --as me-agent > .mcp.json   # Claude Code then 
 - a tool its server marks read-only, or non-destructive and closed-world, runs at once;
 - a tool mapped in `servers.md` to a permission becomes a request for a yes; nothing reaches the tool until a person signs, and the yes covers only those exact arguments, once;
 - a destructive tool needs `destroy`; any other tool that can change things outside and is not mapped is refused;
-- results are checked before the agent sees them: keys are always removed, and emails, phone numbers, card numbers and IBANs are removed unless the mandate can `data.export`.
+- results are checked before the agent sees them, text and structured parts alike: keys are always removed, and emails, phone numbers, card numbers and IBANs are removed unless the mandate can `data.export`.
+- a refused call tells the person at once (see below): an agent reaching for what it may not do is the first sign it went off track or read something written to mislead it.
 
 ## How work runs
 
@@ -43,6 +44,8 @@ What the code enforces today:
 
 - Only people answer, and every answer is signed. `noroles keygen` gives each person an ed25519 key locked with a passphrase; `yes` and `no` refuse to run inside `noroles run` or without a terminal. Approval is recomputed from signatures every time, never read from a status field, so a yes written into a file by hand counts for nothing.
 - The signer sees the exact action. A request edited after it was asked is void.
+- The signer sees what is unusual, so most answers take seconds: a payee never paid before (confirm them through another channel), an amount over 3× the usual, the first time a mandate uses a permission, an action that was already declined, a burst of requests from one agent. Flags are computed from the signed history each time, so editing a file cannot hide one.
+- On a Mac, a request waiting for a yes, a refused call and every incident show up as a notification; money, flags, refusals and incidents play a sound. `NOROLES_NOTIFY=0` turns this off.
 - Limits are the lower of the mandate and `permissions.md`; `per_period` is summed across all mandates.
 - Quorum counts distinct humans, never the asker or the asker's agent. When fewer people hold a permission than its quorum, each missing yes becomes a 24h wait.
 - Silence passes to root, then counts as a no.

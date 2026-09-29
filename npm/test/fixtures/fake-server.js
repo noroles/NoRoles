@@ -10,6 +10,7 @@ const TOOLS = [
   { name: 'send_email', description: 'Send an email', inputSchema: { type: 'object' }, annotations: { readOnlyHint: false, openWorldHint: true } },
   { name: 'pay', description: 'Pay an invoice', inputSchema: { type: 'object' }, annotations: { readOnlyHint: false, openWorldHint: true } },
   { name: 'wipe', description: 'Delete everything', inputSchema: { type: 'object' }, annotations: { readOnlyHint: false, destructiveHint: true } },
+  { name: 'get_customer_json', description: 'Look up a customer, structured', inputSchema: { type: 'object' }, annotations: { readOnlyHint: true } },
   { name: 'mystery', description: 'No annotations at all', inputSchema: { type: 'object' } },
 ];
 
@@ -26,6 +27,7 @@ rl.on('line', (line) => {
     const text = m.params.name === 'get_customer'
       ? 'Ana Lima, ana.lima@example.com, +44 20 7946 0958, card 4242 4242 4242 4242, IBAN GB82WEST12345698765432, key sk_live_abcdefghijklmnop1234'
       : `${m.params.name} ok`;
+    if (m.params.name === 'get_customer_json') return out({ jsonrpc: '2.0', id: m.id, result: { content: [], structuredContent: { result: [{ name: 'Ana Lima', email: 'ana.lima@example.com', notes: ['key sk_live_abcdefghijklmnop1234'] }] }, _meta: { raw: 'sk_live_abcdefghijklmnop1234' } } });
     return out({ jsonrpc: '2.0', id: m.id, result: { content: [{ type: 'text', text }] } });
   }
   out({ jsonrpc: '2.0', id: m.id, error: { code: -32601, message: 'no such method' } });

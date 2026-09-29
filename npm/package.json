@@ -1,6 +1,6 @@
 {
   "name": "noroles",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "NoRoles: run a company of people and AI agents on permissions instead of roles. Start a company, ask for a yes, give agents only the keys their mandate allows.",
   "type": "module",
   "bin": { "noroles": "bin/noroles.js" },

@@ -10,8 +10,12 @@ import { init } from '../src/init.js';
 import { load, check, mandateState, sha, readText, META_FILES } from '../src/company.js';
 import { ask, openMandate, proposeMeta, decide, run, doAction, settle, stop, resume, audit, incidents, resolveIncident } from '../src/requests.js';
 import { keygen } from '../src/keys.js';
+import { flags } from '../src/flags.js';
 
 const PASS = 'correct horse battery';
+const NOTES = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'noroles-notes-')), 'notes.jsonl');
+process.env.NOROLES_NOTIFY_LOG = NOTES;
+const notes = () => (fs.existsSync(NOTES) ? fs.readFileSync(NOTES, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
 process.env.NOROLES_KEYS = fs.mkdtempSync(path.join(os.tmpdir(), 'noroles-keys-'));
 const KEYS = { ana: keygen('ana', PASS), ben: keygen('ben', PASS) };
 
@@ -356,4 +360,60 @@ test('the record: NoRoles commits only its own files, never other work in the fo
   const files = execFileSync('git', ['show', '--name-only', '--format=', 'HEAD'], { cwd: dir }).toString().trim().split('\n');
   assert.deepEqual(files, [`requests/${r.id}.yaml`]);
   assert.match(execFileSync('git', ['status', '--porcelain'], { cwd: dir }).toString(), /\?\? draft.html/);
+});
+
+// ---------- flags: what is unusual, so a yes takes seconds ----------
+
+const yesTo = (dir, r) => decide(dir, { id: r.id, who: 'ana', yes: true, passphrase: PASS, now: T0 });
+
+test('flags: a payee never paid before is flagged; once paid, it is not', () => {
+  const dir = company(); opened(dir);
+  const first = spend(dir, 10);
+  assert.ok(flags(load(dir), first).some((f) => /new payee: Registrar Inc/.test(f)));
+  assert.ok(flags(load(dir), first).some((f) => /first time mandate site uses money.spend/.test(f)));
+  yesTo(dir, first);
+  const second = spend(dir, 10, { now: at(1) });
+  assert.deepEqual(flags(load(dir), second), []);
+});
+
+test('flags: an amount far above the usual is flagged', () => {
+  const dir = company(); opened(dir);
+  for (let i = 0; i < 3; i++) yesTo(dir, spend(dir, 10, { now: at(i) }));
+  const big = spend(dir, 40, { now: at(4) });
+  assert.ok(flags(load(dir), big).some((f) => /4\.0× the usual money.spend \(median 10\)/.test(f)));
+});
+
+test('flags: asking again for exactly what was declined is flagged', () => {
+  const dir = company(); opened(dir);
+  const r = spend(dir, 10);
+  decide(dir, { id: r.id, who: 'ana', yes: false, reason: 'wrong registrar', passphrase: PASS, now: T0 });
+  const again = spend(dir, 10, { now: at(1) });
+  assert.ok(flags(load(dir), again).some((f) => /declined on 2026-10-01 by ana: wrong registrar/.test(f)));
+});
+
+test('flags: a burst of requests from one agent is flagged', () => {
+  const dir = company(); opened(dir);
+  let r;
+  for (let i = 0; i < 6; i++) r = spend(dir, 1, { now: new Date(T0.getTime() + i * 60000) });
+  assert.ok(flags(load(dir), r).some((f) => /request 6 from ana-agent in the last hour/.test(f)));
+});
+
+test('flags cannot be hidden by editing the request file', () => {
+  const dir = company(); opened(dir);
+  const r = spend(dir, 10);
+  const f = path.join(dir, 'requests', `${r.id}.yaml`);
+  fs.writeFileSync(f, fs.readFileSync(f, 'utf8') + 'flags: []\n');
+  assert.ok(flags(load(dir), load(dir).requests[r.id]).length > 0);
+});
+
+test('notify: a request that waits for a yes tells the person; money is urgent', () => {
+  const dir = company(); opened(dir);
+  const before = notes().length;
+  const r = spend(dir, 10);
+  const n = notes().slice(before);
+  assert.equal(n.length, 1);
+  assert.match(n[0].title, /ana-agent needs a yes/);
+  assert.match(n[0].body, new RegExp(`noroles yes ${r.id}`));
+  assert.match(n[0].body, /! new payee/);
+  assert.equal(n[0].urgent, true);
 });
