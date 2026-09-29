@@ -1,7 +1,7 @@
 //! NoRoles command line. https://noroles.com
 use noroles::company::*;
 use noroles::requests::{self, Ask, Proof};
-use noroles::{flags, hook, keys};
+use noroles::{flags, hook, keys, serve};
 use std::collections::BTreeMap;
 use std::io::{BufRead, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
@@ -25,6 +25,7 @@ const HELP: &str = "NoRoles: permissions instead of roles, for people and AI age
   noroles keygen               create your signing key (once per person)
   noroles stop <mandate> --reason \"<why>\"   break glass: anyone can stop a mandate
   noroles resume <mandate>     ask the holder to lift a stop
+  noroles serve                the panel: answer requests, open and stop mandates, see everything
   noroles hook install --as <agent>   check every Claude Code tool call in this company
   noroles audit                check every signature and find changes made outside NoRoles
   noroles resolve <incident> \"<what happened>\"
@@ -379,6 +380,13 @@ fn main() {
             if s(&v, "hook_event_name").unwrap_or("PreToolUse") != "PreToolUse" { return; }
             let out = hook::pre_tool_use(&v, &who, now);
             if !out.is_empty() { println!("{out}"); }
+        }
+        Some("serve" | "panel") => {
+            if std::env::var("NOROLES_EXECUTOR").is_ok() { fail("executors cannot do this: only people"); }
+            let dir = find_dir(); let c = company(&dir);
+            let who = me(&c).unwrap_or_else(|| fail("your git email is not in permissions.md people"));
+            let port = o.one("port").map(|p| p.parse().unwrap_or_else(|_| fail("--port must be a number"))).unwrap_or(7707);
+            ok(serve::serve(dir, who, port, o.one("no-open").is_none()));
         }
         Some("mcp" | "mcp-config") => fail("the MCP gateway is still in the JavaScript version for now: `npx noroles@0.4 mcp ...`. For Claude Code, `noroles hook install` covers every tool, local or hosted."),
         Some(other) => fail(&format!("unknown command \"{other}\". Run `noroles help`.")),

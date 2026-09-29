@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoRoles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f5f7fc;--paper:#ffffff;--ink:#0f1b3f;--soft:#4a5680;--faint:#8a93b3;--line:#d5dcee;--line2:#e8ecf6;
+  --accent:#1d3fb8;--accent-ink:#ffffff;--wash:#e9eefb;--alarm:#b8321f;--alarm-wash:#fbecea;--ok:#1f6b45;--ok-wash:#e6f3ec;--gold:#8a6a12;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--body:"Barlow",system-ui,-apple-system,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c0a08;--paper:#16120e;--ink:#f2e8d5;--soft:#c9b99a;--faint:#8c7d63;--line:#3a2f22;--line2:#241d15;
+  --accent:#d9a43f;--accent-ink:#140f08;--wash:#221a10;--alarm:#e0492c;--alarm-wash:#2a120c;--ok:#8fc49a;--ok-wash:#132016;--gold:#d9a43f;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c0a08;--paper:#16120e;--ink:#f2e8d5;--soft:#c9b99a;--faint:#8c7d63;--line:#3a2f22;--line2:#241d15;
+  --accent:#d9a43f;--accent-ink:#140f08;--wash:#221a10;--alarm:#e0492c;--alarm-wash:#2a120c;--ok:#8fc49a;--ok-wash:#132016;--gold:#d9a43f;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+button,input,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+nav{border-right:1px solid var(--line);padding:24px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{font:700 30px/1 var(--display);letter-spacing:.01em;padding:0 24px 4px}
+.co{color:var(--faint);font-size:13px;padding:0 24px 24px}
+nav a{display:flex;align-items:center;gap:12px;padding:10px 24px;color:var(--soft);text-decoration:none;font:600 19px/1 var(--display);letter-spacing:.02em;border-left:3px solid transparent;transition:background .15s,color .15s}
+nav a:hover{background:var(--wash);color:var(--ink)}
+nav a.on{color:var(--ink);border-left-color:var(--accent);background:var(--wash)}
+nav a .n{margin-left:auto;font:500 13px var(--mono);color:var(--accent-ink);background:var(--accent);padding:1px 7px}
+nav a .n:empty{display:none}
+nav svg{width:18px;height:18px;flex:none}
+.foot{margin-top:auto;padding:0 24px;display:flex;flex-direction:column;gap:10px;color:var(--faint);font-size:13px}
+.theme{background:none;border:1px solid var(--line);padding:6px 10px;cursor:pointer;text-align:left;color:var(--soft)}
+.theme:hover{border-color:var(--ink);color:var(--ink)}
+main{padding:40px clamp(16px,4vw,56px) 80px;max-width:1080px;width:100%}
+h1{font:700 clamp(34px,4.4vw,52px)/1 var(--display);margin:0 0 10px;letter-spacing:.005em;text-wrap:balance}
+.lead{color:var(--soft);max-width:60ch;margin:0 0 32px;font-size:17px}
+h2{font:600 22px/1.1 var(--display);letter-spacing:.02em;margin:40px 0 14px}
+.muted{color:var(--faint)}
+.mono{font-family:var(--mono);font-size:13.5px}
+.banner{border:1px solid var(--alarm);background:var(--alarm-wash);color:var(--alarm);padding:12px 16px;margin:0 0 24px}
+.banner b{font-weight:600}
+/* requests */
+.req{background:var(--paper);border:1px solid var(--line);margin:0 0 18px;display:grid;grid-template-columns:minmax(0,1fr) 260px;transition:border-color .15s,transform .15s}
+.req:hover{border-color:var(--soft)}
+.req .main{padding:22px 24px;min-width:0}
+.req .side{border-left:1px solid var(--line);padding:22px 20px;display:flex;flex-direction:column;gap:10px;background:var(--wash)}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--faint);font-size:13.5px;margin-bottom:10px}
+.meta b{color:var(--soft);font-weight:600}
+.what{font:600 26px/1.15 var(--display);margin:0 0 14px;overflow-wrap:anywhere}
+.fields{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 18px;margin:0 0 14px}
+.fields dt{color:var(--faint);font-size:13.5px;padding-top:2px}
+.fields dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.fields dd.big{font:600 20px/1.2 var(--display)}
+.flags{border-left:3px solid var(--alarm);background:var(--alarm-wash);padding:10px 14px;margin:0 0 12px;display:flex;flex-direction:column;gap:6px;color:var(--alarm)}
+.flags div{display:flex;gap:8px;align-items:flex-start}
+.flags svg{width:16px;height:16px;flex:none;margin-top:3px}
+details{margin-top:6px}
+summary{cursor:pointer;color:var(--faint);font-size:13.5px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line2);padding:10px 12px;margin:8px 0 0;font:13px/1.5 var(--mono)}
+.btn{border:1px solid var(--ink);background:var(--paper);padding:10px 14px;cursor:pointer;font:600 17px/1 var(--display);letter-spacing:.03em;text-align:center;transition:transform .08s,background .15s,color .15s}
+.btn:hover{background:var(--ink);color:var(--bg)}
+.btn:active{transform:translateY(1px)}
+.btn.yes{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.yes:hover{filter:brightness(1.1);background:var(--accent);color:var(--accent-ink)}
+.btn.small{padding:7px 10px;font-size:15px}
+.btn[disabled]{opacity:.5;cursor:wait}
+.field{width:100%;border:1px solid var(--line);background:var(--paper);padding:9px 11px}
+.field:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.err{color:var(--alarm);font-size:14px}
+.okmsg{color:var(--ok);font-size:14px}
+.prog{font-size:13px;color:var(--faint)}
+.empty{border:1px dashed var(--line);padding:48px 32px;text-align:left}
+.empty .big{font:600 32px/1.1 var(--display);margin:0 0 6px}
+/* mandates: bento */
+.bento{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.m{background:var(--paper);border:1px solid var(--line);padding:20px 22px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s}
+.m.first{grid-column:1/-1}
+.m:hover{border-color:var(--soft)}
+.m .top{display:flex;align-items:center;gap:10px}
+.m .name{font:700 24px/1 var(--display)}
+.state{font:500 12.5px var(--mono);padding:2px 7px;border:1px solid currentColor;margin-left:auto;white-space:nowrap}
+.state.on{color:var(--ok)}.state.off{color:var(--faint)}.state.stop{color:var(--alarm)}
+.m .intent{font-size:18px;line-height:1.35}
+.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;font-size:14px}
+.kv dt{color:var(--faint)}.kv dd{margin:0}
+.perms{display:flex;flex-wrap:wrap;gap:4px 12px}
+.perm{font:500 13px var(--mono);border-bottom:1px solid var(--accent);color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:4px;border-top:1px solid var(--line2);margin-top:4px;padding-top:12px}
+.days{font:600 15px var(--display);color:var(--soft);letter-spacing:.02em}
+/* people */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line2);text-align:left;vertical-align:top}
+th{font:600 15px var(--display);letter-spacing:.03em;color:var(--soft);background:var(--wash)}
+td.c{text-align:center}
+.dot{display:inline-block;width:10px;height:10px;background:var(--accent)}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:8px}
+.p{background:var(--paper);border:1px solid var(--line);padding:16px 18px}
+.p .nm{font:600 21px/1.1 var(--display)}
+.p .sub{color:var(--faint);font-size:13.5px}
+/* activity */
+.feed{border:1px solid var(--line);background:var(--paper)}
+.ev{display:grid;grid-template-columns:92px 110px minmax(0,1fr);gap:12px;padding:10px 16px;border-bottom:1px solid var(--line2);font-size:14.5px;align-items:baseline}
+.ev:last-child{border-bottom:0}
+.tag{font:500 12.5px var(--mono)}
+.tag.open{color:var(--faint)}.tag.asked{color:var(--accent)}.tag.approved,.tag.done{color:var(--ok)}.tag.refused,.tag.denied,.tag.expired,.tag.void{color:var(--alarm)}
+.inc{border:1px solid var(--alarm);background:var(--paper);padding:14px 18px;margin-bottom:10px}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  nav{position:sticky;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 12px;gap:0;border-right:0;border-bottom:1px solid var(--line);background:var(--bg);z-index:2}
+  .brand{font-size:24px;padding:0 12px 0 4px}.co,.foot{display:none}
+  nav a{padding:8px 10px;border-left:0;border-bottom:3px solid transparent;font-size:17px}
+  nav a.on{border-bottom-color:var(--accent)}
+  .req{grid-template-columns:1fr}.req .side{border-left:0;border-top:1px solid var(--line)}
+  .bento{grid-template-columns:1fr}
+  .ev{grid-template-columns:70px minmax(0,1fr)}.ev .t2{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav>
+    <div class="brand">NoRoles</div>
+    <div class="co" id="co"></div>
+    <a href="#inbox" data-v="inbox"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11h5l1.5 2.5h3L13 11h5M2 11l2.5-7h11L18 11v6H2z"/></svg>Inbox<span class="n" id="n-inbox"></span></a>
+    <a href="#mandates" data-v="mandates"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2h9l3 3v13H4zM7 8h6M7 11h6M7 14h4"/></svg>Mandates</a>
+    <a href="#people" data-v="people"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="3"/><path d="M1.5 17c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5M13 4.5a3 3 0 010 5.5M15 12.8c1.8.6 3 2 3.4 4.2"/></svg>People</a>
+    <a href="#activity" data-v="activity"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 10h4l2.5-6 4 12 2.5-6h4"/></svg>Activity<span class="n" id="n-inc"></span></a>
+    <div class="foot">
+      <span id="me"></span>
+      <button class="theme" id="theme"></button>
+    </div>
+  </nav>
+  <main id="view"><p class="muted">Loading…</p></main>
+</div>
+<script>
+(() => {
+const token = location.hash.length > 20 ? location.hash.slice(1) : (sessionStorage.getItem('nr-token') || '');
+if (token) { try { sessionStorage.setItem('nr-token', token); } catch {} history.replaceState(null, '', location.pathname + '#inbox'); }
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ICON_FLAG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5l7 13H1zM8 6v4M8 12v.5"/></svg>';
+let S = null, last = '', view = 'inbox';
+const ui = {}; // open forms and messages, kept across refreshes: ui[id] = { mode, msg, err }
+
+// theme: follows the system unless chosen; remembered on this computer
+const THEMES = ['system', 'light', 'dark'];
+const NAMES = { system: 'Theme: system', light: 'Theme: Gzhel', dark: 'Theme: Khokhloma' };
+let theme = 'system'; try { theme = localStorage.getItem('nr-theme') || 'system'; } catch {}
+const applyTheme = () => { if (theme === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', theme); $('#theme').textContent = NAMES[theme]; };
+$('#theme').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; try { localStorage.setItem('nr-theme', theme); } catch {} applyTheme(); };
+applyTheme();
+
+async function api(path, body) {
+  const r = await fetch(path, { method: body ? 'POST' : 'GET', headers: { 'X-NoRoles-Token': token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({ error: 'no answer from NoRoles' }));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+const ago = (iso) => { const s = (Date.now() - new Date(iso)) / 1000; if (s < 60) return 'just now'; if (s < 3600) return Math.round(s / 60) + ' min ago'; if (s < 86400) return Math.round(s / 3600) + ' h ago'; return Math.round(s / 86400) + ' d ago'; };
+const daysLeft = (iso) => { if (!iso) return ''; const d = Math.ceil((new Date(iso) - Date.now()) / 864e5); return d < 0 ? 'ended' : d === 0 ? 'ends today' : d + (d === 1 ? ' day left' : ' days left'); };
+const fmtAmount = (a) => a.amount == null ? '' : `${a.amount}${a.currency ? ' ' + a.currency : ''}`;
+const toolLabel = (t) => { const p = String(t).split('__'); if (p[0] !== 'mcp' || p.length < 3) return t; const server = p[1].replace(/^claude[._]ai_/, ''); return (/^[0-9a-f-]{20,}$/.test(server) ? '' : server + ' · ') + p.slice(2).join('__').replace(/_/g, ' '); };
+
+// ---------- inbox ----------
+function reqCard(r) {
+  const a = r.action || {};
+  const call = a.payload && a.payload.tool ? a.payload : null;
+  const title = r.kind === 'open' ? `Open the mandate “${r.mandate}”` : r.kind === 'meta' ? 'Change the company rules' : r.kind === 'resume' ? `Lift the stop on “${r.mandate}”` : call ? toolLabel(call.tool) : a.summary;
+  const f = [];
+  if (r.kind === 'open') { const m = (S.mandates || []).find((x) => x.name === r.mandate); if (m) { f.push(['Goal', m.intent]); f.push(['Can', Object.keys(m.can || {}).join(', ') || 'nothing lasting']); f.push(['Stop if', m.stop_if]); f.push(['Ends', (m.ends || '').slice(0, 10)]); } }
+  if (a.to) f.push(['To', a.to, 'big']);
+  if (a.amount != null) f.push(['Amount', fmtAmount(a), 'big']);
+  const cap = (k) => String(k).replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  if (call) for (const [k, v] of Object.entries(call.arguments || {})) { const t = typeof v === 'string' ? v : JSON.stringify(v, null, 2); if (a.to && t === String(a.to)) continue; f.push([cap(k), t]); }
+  else if (r.kind === 'action' && a.summary && title !== a.summary) f.push(['Action', a.summary]);
+  if (a.items) a.items.forEach((it, i) => f.push([`Item ${i + 1}`, it]));
+  if (a.command) f.push(['Runs', a.command.join(' ')]);
+  if (a.hashes) f.push(['Files', Object.keys(a.hashes).join(', ')]);
+  const st = ui[r.id] || {};
+  const need = (r.progress || []).map((p) => `${p.permission}: ${p.got.length}/${p.need}${p.wait_until ? ', then waits until ' + new Date(p.wait_until).toLocaleString() : ''}`).join(' · ');
+  const mine = (r.progress || []).some((p) => p.can.includes(S.me));
+  let side = '';
+  if (st.mode === 'yes') side = `<label class="muted" for="pw-${r.id}">Passphrase of your signing key</label><input class="field" type="password" id="pw-${r.id}" autocomplete="current-password" data-enter="sign" data-id="${r.id}"><button class="btn yes" data-act="sign" data-id="${r.id}">Sign yes</button><button class="btn small" data-act="cancel" data-id="${r.id}">Back</button>`;
+  else if (st.mode === 'no') side = `<label class="muted" for="why-${r.id}">Why not (the agent sees this)</label><input class="field" id="why-${r.id}" data-enter="decline" data-id="${r.id}"><label class="muted" for="pw-${r.id}">Passphrase</label><input class="field" type="password" id="pw-${r.id}" autocomplete="current-password" data-enter="decline" data-id="${r.id}"><button class="btn" data-act="decline" data-id="${r.id}">Decline</button><button class="btn small" data-act="cancel" data-id="${r.id}">Back</button>`;
+  else if (mine) side = `<button class="btn yes" data-act="yes" data-id="${r.id}">Approve</button><button class="btn" data-act="no" data-id="${r.id}">Decline</button>`;
+  else side = `<p class="muted">Waiting for ${esc((r.progress || []).flatMap((p) => p.can).join(', ') || 'root')}.</p>`;
+  return `<article class="req" id="r-${r.id}">
+    <div class="main">
+      <div class="meta"><b>${esc(r.mandate || 'company')}</b><span>${esc((r.permissions || []).join(', ') || 'no permission')}</span><span>asked by ${esc(r.asker)}</span><span title="${esc(r.created)}">${ago(r.created)}</span>${r.escalated ? '<span class="err">passed to root: nobody answered in time</span>' : ''}</div>
+      <div class="what">${esc(title)}</div>
+      ${r.flags.length ? `<div class="flags">${r.flags.map((x) => `<div>${ICON_FLAG}<span>${esc(x)}</span></div>`).join('')}</div>` : ''}
+      ${f.length ? `<dl class="fields">${f.map(([k, v, c]) => `<dt>${esc(k)}</dt><dd class="${c || ''}">${esc(v)}</dd>`).join('')}</dl>` : ''}
+      <details><summary>Exact record ${esc(r.id)}</summary><pre>${esc(JSON.stringify(a, null, 2))}</pre></details>
+    </div>
+    <div class="side">${side}${st.err ? `<div class="err">${esc(st.err)}</div>` : ''}${need ? `<div class="prog">${esc(need)}</div>` : ''}</div>
+  </article>`;
+}
+
+function inbox() {
+  const p = S.pending;
+  const errs = S.problems.filter((x) => x.error);
+  let h = '';
+  if (errs.length) h += `<div class="banner"><b>The company files break the laws, so nothing lasting runs.</b><br>${errs.map((e) => esc(e.where + ': ' + e.msg)).join('<br>')}</div>`;
+  if (S.incidents.length) h += `<div class="banner"><b>${S.incidents.length} incident${S.incidents.length > 1 ? 's' : ''} need${S.incidents.length > 1 ? '' : 's'} you.</b> <a href="#activity" style="color:inherit">See them in Activity</a></div>`;
+  h += `<h1>${p.length ? (p.length === 1 ? 'One thing waits for you' : p.length + ' things wait for you') : 'Nothing waits for you'}</h1>`;
+  h += `<p class="lead">${p.length ? 'Each card is the exact action, from the signed record. Red lines are what is unusual about it. A yes is signed with your key; silence counts as no.' : 'Agents keep working on everything that can be undone. When one needs to send, pay or delete, it lands here and your Mac tells you.'}</p>`;
+  h += p.map(reqCard).join('');
+  const done = S.recent.filter((r) => r.kind === 'action').slice(0, 6);
+  if (done.length) h += `<h2>Recently</h2><div class="feed">${done.map((r) => `<div class="ev"><span class="muted" title="${esc(r.created)}">${ago(r.created)}</span><span class="tag ${esc(r.status)}">${esc(r.status)}</span><span>${esc(r.action.payload && r.action.payload.tool ? toolLabel(r.action.payload.tool) + (r.action.to ? ' → ' + r.action.to : '') : r.action.summary)}</span></div>`).join('')}</div>`;
+  return h;
+}
+
+// ---------- mandates ----------
+function mandates() {
+  const ms = S.mandates;
+  let h = `<h1>Mandates</h1><p class="lead">A mandate is a goal with limits: what an agent works toward, what it may do, when it stops. Opening one takes your yes once; everything outside its limits still asks.</p>`;
+  h += `<div class="bento">${ms.map((m, i) => {
+    const st = ui['m-' + m.name] || {};
+    const stopped = /^stopped/.test(m.why);
+    const size = ms.length % 2 === 1 && i === 0 ? 'first' : '';
+    const state = m.active ? '<span class="state on">active</span>' : stopped ? '<span class="state stop">stopped</span>' : `<span class="state off">${m.opened_pending ? 'waiting for yes' : 'closed'}</span>`;
+    let actions = '';
+    if (st.mode === 'stop') actions = `<input class="field" id="stop-${m.name}" placeholder="What did you see? The holder reviews it within 24h" data-enter="stop" data-id="${m.name}"><button class="btn" data-act="stop" data-id="${m.name}">Stop it now</button><button class="btn small" data-act="mcancel" data-id="${m.name}">Back</button>`;
+    else if (m.active) actions = `<span class="days">${daysLeft(m.ends)}</span><span style="flex:1"></span><button class="btn small" data-act="stopform" data-id="${m.name}">Stop</button>`;
+    else if (stopped) actions = `<span class="err">${esc(m.why)}</span><span style="flex:1"></span><button class="btn small" data-act="resume" data-id="${m.name}">Lift the stop</button>`;
+    else if (m.opened_pending) actions = `<a class="btn small" href="#inbox">Answer in Inbox</a>`;
+    else actions = `<span class="muted">${esc(m.why)}</span><span style="flex:1"></span><button class="btn small yes" data-act="open" data-id="${m.name}">Open</button>`;
+    return `<section class="m ${size}">
+      <div class="top"><span class="name">${esc(m.name)}</span>${state}</div>
+      <div class="intent">${esc(m.intent)}</div>
+      <dl class="kv"><dt>Measured by</dt><dd>${esc(m.metric)}</dd><dt>Stop if</dt><dd>${esc(m.stop_if)}</dd><dt>People</dt><dd>${esc(m.holder)} holds it · ${esc(m.executor.join(', '))} does it</dd></dl>
+      <div class="perms">${Object.entries(m.can).map(([p, l]) => `<span class="perm" title="${esc(JSON.stringify(l))}">${esc(p)}${l && l.amount != null ? ' ≤ ' + esc(l.amount) : ''}</span>`).join('') || '<span class="muted">nothing lasting</span>'}</div>
+      <div class="row">${actions}</div>${st.err ? `<div class="err">${esc(st.err)}</div>` : ''}
+    </section>`;
+  }).join('')}</div>`;
+  return h;
+}
+
+// ---------- people ----------
+function people() {
+  let h = `<h1>People</h1><p class="lead">Nobody has a role. Each permission below is the right to say yes to one kind of action that can’t be undone. Agents hold none: an agent acts with its person’s permissions, never more.</p>`;
+  h += `<div class="people">${S.people.map((p) => `<div class="p"><div class="nm">${esc(p.name || p.id)}</div><div class="sub">${esc(p.id)}${p.root ? ' · root' : ''} · ${p.signed ? 'signs with a key' : '<span class="err">no signing key</span>'}</div><div class="sub">${S.agents.filter((a) => a.works_for === p.id).map((a) => 'agent ' + esc(a.id)).join(', ') || 'no agents'}</div></div>`).join('')}</div>`;
+  h += `<h2>Who can say yes</h2><div class="tablewrap"><table><thead><tr><th>Permission</th>${S.people.map((p) => `<th class="c">${esc(p.name || p.id)}</th>`).join('')}<th>How often</th><th>Limits</th><th>Answer within</th></tr></thead><tbody>`;
+  const each = { item: 'every action', batch: 'every batch', mandate: 'once per mandate' };
+  for (const p of S.permissions) h += `<tr><td class="mono">${esc(p.name)}</td>${S.people.map((x) => `<td class="c">${p.holders.includes(x.id) ? '<span class="dot" title="holds it"></span>' : ''}</td>`).join('')}<td>${esc(each[p.each] || p.each)}${p.quorum > 1 ? ` · ${p.quorum} people` : ''}</td><td class="mono">${p.limits ? esc(Object.entries(p.limits).map(([k, v]) => k + ' ' + v).join(', ')) : '<span class="muted">none</span>'}</td><td>${esc(p.respond_within || '48h')}</td></tr>`;
+  h += `</tbody></table></div>`;
+  if (S.tools.length) {
+    const kind = (r) => r === 'open' || r?.open ? 'open' : r === 'refuse' ? 'refused' : 'asks for ' + (r.permissions || []).join(', ');
+    const groups = {};
+    for (const t of S.tools) (groups[kind(t.rule)] ||= []).push(...t.pattern.split('|'));
+    const words = (ps) => ps.map((p) => p.replace(/^\*?_*/, '').replace(/\*$/, '').replace(/_/g, ' ')).join(', ');
+    h += `<h2>Which tool calls ask</h2><div class="tablewrap"><table><tbody>${Object.entries(groups).map(([k, ps]) => `<tr><td style="width:190px">${k === 'open' ? '<span class="muted">runs at once</span>' : esc(k)}</td><td>${esc(words(ps))}</td></tr>`).join('')}<tr><td class="muted">anything else</td><td class="muted">reading and drafting run at once; any other call to an outside tool is refused</td></tr></tbody></table></div>`;
+  }
+  return h;
+}
+
+// ---------- activity ----------
+function activity() {
+  let h = `<h1>Activity</h1><p class="lead">What agents did, as NoRoles saw it. Every call to an outside tool, and every answer. The full record is the git history of the company folder.</p>`;
+  if (S.incidents.length) h += `<h2>Incidents</h2>` + S.incidents.map((i) => { const st = ui['i-' + i.id] || {}; return `<div class="inc"><div class="meta"><b>${esc(i.mandate || 'company')}</b><span>${ago(i.opened)}</span><span>for ${esc(i.holder)}</span></div><div>${esc(i.what)}</div>${st.mode === 'resolve' ? `<div class="row" style="margin-top:10px"><input class="field" id="note-${i.id}" placeholder="What happened, or what you did about it" data-enter="resolve" data-id="${i.id}" style="flex:1;min-width:220px"><input class="field" type="password" id="pw-i-${i.id}" placeholder="Passphrase" data-enter="resolve" data-id="${i.id}" style="width:170px"><button class="btn small" data-act="resolve" data-id="${i.id}">Resolve</button></div>` : `<div class="row" style="margin-top:10px"><button class="btn small" data-act="resolveform" data-id="${i.id}">Resolve or explain</button></div>`}${st.err ? `<div class="err">${esc(st.err)}</div>` : ''}</div>`; }).join('');
+  h += `<h2>Tool calls</h2>`;
+  h += S.calls.length ? `<div class="feed">${S.calls.map((c) => `<div class="ev"><span class="muted" title="${esc(c.at)}">${ago(c.at)}</span><span class="tag ${esc(c.decision)} t2">${esc(c.decision)}</span><span>${esc(toolLabel(c.tool))}${c.mandate ? ` <span class="muted">· ${esc(c.mandate)}</span>` : ''}${c.why ? `<br><span class="muted">${esc(c.why)}</span>` : ''}${c.request ? ` <span class="muted mono">${esc(c.request)}</span>` : ''}</span></div>`).join('')}</div>` : `<div class="empty"><div class="big">No tool calls yet</div><p class="muted">Start a Claude Code session in ${esc(S.dir)}. Every call to an outside tool will show up here.</p></div>`;
+  h += `<h2>Answers</h2><div class="feed">${S.recent.map((r) => `<div class="ev"><span class="muted" title="${esc(r.created)}">${ago(r.created)}</span><span class="tag ${esc(r.status)} t2">${esc(r.status)}</span><span>${esc(r.kind === 'open' ? 'open ' + r.mandate : r.action.payload && r.action.payload.tool ? toolLabel(r.action.payload.tool) : r.action.summary)} <span class="muted">· ${esc(r.asker)}${r.approvals && r.approvals.length ? ' · yes by ' + r.approvals.map((x) => x.by + (x.valid ? '' : ' (not validly signed!)')).join(', ') : ''}${r.denials && r.denials.length ? ' · no by ' + r.denials.map((x) => x.by + (x.reason ? ': ' + x.reason : '')).join(', ') : ''}</span></span></div>`).join('') || '<div class="ev"><span></span><span></span><span class="muted">Nothing yet.</span></div>'}</div>`;
+  return h;
+}
+
+const VIEWS = { inbox, mandates, people, activity };
+function render(force) {
+  if (!S) return;
+  const typing = document.activeElement && document.activeElement.matches('input,textarea');
+  const key = JSON.stringify([S, ui, view]);
+  if (!force && (key === last || typing)) return;
+  last = key;
+  $('#co').textContent = S.company || '';
+  $('#me').textContent = S.me ? 'You are ' + S.me : '';
+  $('#n-inbox').textContent = S.pending.filter((r) => (r.progress || []).some((p) => p.can.includes(S.me))).length || '';
+  $('#n-inc').textContent = S.incidents.length || '';
+  document.title = (S.pending.length ? `(${S.pending.length}) ` : '') + 'NoRoles';
+  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.v === view));
+  $('#view').innerHTML = VIEWS[view]();
+  const focus = document.querySelector('[data-autofocus]') || document.querySelector('.req .side input, .m input, .inc input');
+  if (focus) focus.focus();
+}
+
+async function refresh(force) {
+  try { S = await api('/api/state'); render(force); }
+  catch (e) { $('#view').innerHTML = `<h1>Can’t reach NoRoles</h1><p class="lead">${esc(e.message)}. Start it again with <span class="mono">noroles serve</span> in the company folder and open the link it prints.</p>`; }
+}
+
+async function run(act, id) {
+  const set = (k, v) => { ui[k] = { ...(ui[k] || {}), ...v }; render(true); };
+  try {
+    if (act === 'yes' || act === 'no') return set(id, { mode: act, err: '' });
+    if (act === 'cancel') { delete ui[id]; return render(true); }
+    if (act === 'sign' || act === 'decline') {
+      const pw = $('#pw-' + id)?.value || '';
+      const reason = $('#why-' + id)?.value || '';
+      document.querySelectorAll(`[data-id="${id}"]`).forEach((b) => b.disabled = true);
+      await api('/api/answer', { id, yes: act === 'sign', passphrase: pw, reason });
+      delete ui[id];
+    }
+    if (act === 'open') { const r = await api('/api/open', { mandate: id }); view = 'inbox'; location.hash = 'inbox'; if (r.id) ui[r.id] = { mode: 'yes' }; }
+    if (act === 'stopform') return set('m-' + id, { mode: 'stop', err: '' });
+    if (act === 'mcancel') { delete ui['m-' + id]; return render(true); }
+    if (act === 'stop') { await api('/api/stop', { mandate: id, reason: $('#stop-' + id)?.value || '' }); delete ui['m-' + id]; }
+    if (act === 'resume') { const r = await api('/api/resume', { mandate: id }); view = 'inbox'; location.hash = 'inbox'; if (r.id) ui[r.id] = { mode: 'yes' }; }
+    if (act === 'resolveform') return set('i-' + id, { mode: 'resolve' });
+    if (act === 'resolve') { await api('/api/resolve', { id, note: $('#note-' + id)?.value || '', passphrase: $('#pw-i-' + id)?.value || '' }); delete ui['i-' + id]; }
+    document.activeElement?.blur();
+    await refresh(true);
+  } catch (e) {
+    const k = ['sign', 'decline'].includes(act) ? id : ['stop', 'open', 'resume'].includes(act) ? 'm-' + id : act === 'resolve' ? 'i-' + id : id;
+    ui[k] = { ...(ui[k] || {}), err: e.message.replace(/^wrong passphrase.*/i, 'Wrong passphrase: nothing was recorded.') };
+    render(true);
+  }
+}
+
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) { e.preventDefault(); run(b.dataset.act, b.dataset.id); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.dataset.enter) { e.preventDefault(); run(e.target.dataset.enter, e.target.dataset.id); } if (e.key === 'Escape' && e.target.matches('input')) { e.target.blur(); } });
+const route = () => { const v = location.hash.slice(1); if (VIEWS[v]) { view = v; render(true); } };
+window.addEventListener('hashchange', route);
+route();
+refresh(true);
+setInterval(() => { if (!document.hidden) refresh(false); }, 2500);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(false); });
+})();
+</script>
+</body>
+</html>

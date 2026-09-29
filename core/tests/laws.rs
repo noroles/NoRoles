@@ -492,3 +492,11 @@ fn denied(out: &str) -> Option<String> {
 #[test] fn canonical_matches_javascript() {
     assert_eq!(canonical(&json!({ "b": 1, "a": [2.5, null, true, "x\n\"y\""], "c": { "z": 1e21, "y": 40.0 } })), r#"{"a":[2.5,null,true,"x\n\"y\""],"b":1,"c":{"y":40,"z":1e+21}}"#);
 }
+
+#[test] fn hook_people_only_commands_are_refused_to_agents() {
+    let dir = hook_company();
+    for c in ["noroles yes r-1", "npx noroles serve", "/usr/local/bin/noroles resolve x y", "cd x && noroles keygen"] {
+        assert!(denied(&call(&dir, "Bash", json!({ "command": c }), t0())).is_some(), "{c}");
+    }
+    assert_eq!(call(&dir, "Bash", json!({ "command": "noroles status" }), t0()), "");
+}

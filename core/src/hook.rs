@@ -148,6 +148,14 @@ pub fn pre_tool_use(input: &V, asker: &str, now: i64) -> String {
     if tool == "Bash" {
         let cmd = s(&args, "command").unwrap_or("");
         let w: Vec<&str> = cmd.split_whitespace().collect();
+        // commands only people run: answering, keys, incidents, the panel
+        for (i, x) in w.iter().enumerate() {
+            if x.ends_with("noroles") { if let Some(sub) = w.get(i + 1) {
+                if ["yes", "no", "keygen", "resolve", "serve"].contains(sub) {
+                    return deny(&format!("NoRoles: `noroles {sub}` is for people only. Tell your person what you need; they answer in the panel or a terminal."));
+                }
+            } }
+        }
         if let Some(i) = w.iter().position(|x| *x == "work") {
             if i > 0 && w[i - 1].ends_with("noroles") { if let Some(m) = w.get(i + 1) {
                 let f = session_file(&dir, &session);
