@@ -309,7 +309,7 @@ function runCard(r) {
   if (r.status === 'working') ft = `<span class="muted"><span class="pulse"></span>working…</span><span style="flex:1"></span><button class="btn small" data-act="runstop" data-id="${r.id}">Stop</button>`;
   else if (r.status === 'waiting for you') ft = `<span class="err">It needs your yes to go on.</span><span style="flex:1"></span><a class="btn small yes" href="#inbox">Answer in Inbox</a>`;
   else if (st.mode === 'more') ft = `<textarea class="field" id="more-${r.id}" placeholder="Tell the agent what to do next" style="flex:1;min-width:240px;min-height:60px"></textarea><button class="btn small yes" data-act="runmore" data-id="${r.id}">Continue</button><button class="btn small" data-act="runcancel" data-id="${r.id}">Back</button>`;
-  else ft = `<span class="muted">${r.cost ? '$' + r.cost + ' · ' : ''}${r.ended ? 'ended ' + ago(r.ended) : ''}</span><span style="flex:1"></span><button class="btn small" data-act="runform" data-id="${r.id}">Continue this task</button>`;
+  else ft = `<span class="muted">${r.ended ? 'finished ' + ago(r.ended) : ''}</span><span style="flex:1"></span><button class="btn small" data-act="runform" data-id="${r.id}">Continue this task</button>`;
   return `<article class="run">
     <div class="hd"><div class="meta"><b>${esc(r.mandate)}</b><span>${esc(r.agent)}</span><span title="${esc(r.started)}">${ago(r.started)}</span><span class="st ${cls}">${esc(r.status)}</span></div><div class="tk">${esc(r.task)}</div></div>
     ${r.event_count > r.events.length ? `<div class="ev"><span></span><span class="muted">${r.event_count - r.events.length} earlier steps</span></div>` : ''}
