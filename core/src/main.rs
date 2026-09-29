@@ -26,6 +26,7 @@ const HELP: &str = "NoRoles: permissions instead of roles, for people and AI age
   noroles stop <mandate> --reason \"<why>\"   break glass: anyone can stop a mandate
   noroles resume <mandate>     ask the holder to lift a stop
   noroles serve                the panel: answer requests, open and stop mandates, see everything
+  noroles serve install        start the panel with this computer and keep it on (macOS)
   noroles hook install --as <agent>   check every Claude Code tool call in this company
   noroles audit                check every signature and find changes made outside NoRoles
   noroles resolve <incident> \"<what happened>\"
@@ -385,6 +386,15 @@ fn main() {
             if std::env::var("NOROLES_EXECUTOR").is_ok() { fail("executors cannot do this: only people"); }
             let dir = find_dir(); let c = company(&dir);
             let who = me(&c).unwrap_or_else(|| fail("your git email is not in permissions.md people"));
+            if o.p(0).as_deref() == Some("uninstall") { ok(serve::uninstall()); println!("The panel no longer starts with this computer."); return; }
+            if o.p(0).as_deref() == Some("install") {
+                let exe = std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_else(|_| "noroles".into());
+                let port = o.one("port").map(|p| p.parse().unwrap_or_else(|_| fail("--port must be a number"))).unwrap_or(7707);
+                let url = ok(serve::install(&dir, &exe, port));
+                println!("The panel for {} now starts with this computer and stays on.\nBookmark it: {url}", dir.display());
+                if o.one("no-open").is_none() { std::thread::sleep(std::time::Duration::from_millis(700)); let _ = std::process::Command::new("open").arg(&url).status(); }
+                return;
+            }
             let port = o.one("port").map(|p| p.parse().unwrap_or_else(|_| fail("--port must be a number"))).unwrap_or(7707);
             ok(serve::serve(dir, who, port, o.one("no-open").is_none()));
         }

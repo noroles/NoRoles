@@ -152,3 +152,46 @@ pub fn serve(dir: PathBuf, me: String, port: u16, open_browser: bool) -> Result<
     }
     Ok(())
 }
+
+// ---------- start with the Mac ----------
+
+const LABEL: &str = "com.noroles.panel";
+fn plist_path() -> PathBuf { PathBuf::from(std::env::var("HOME").unwrap_or_default()).join("Library/LaunchAgents").join(format!("{LABEL}.plist")) }
+fn xml(s: &str) -> String { s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;") }
+
+/// Run the panel for this company whenever the person logs in, and keep it running.
+pub fn install(dir: &Path, exe: &str, port: u16) -> Result<String, String> {
+    if !cfg!(target_os = "macos") { return Err("starting with the computer is set up for macOS only; run `noroles serve` yourself".into()); }
+    let home = std::env::var("HOME").unwrap_or_default();
+    let log = crate::keys::key_dir().parent().map(|p| p.join("panel.log")).unwrap_or_else(|| PathBuf::from("/tmp/noroles-panel.log"));
+    let path = format!("{home}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin");
+    let plist = format!(r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>{LABEL}</string>
+  <key>ProgramArguments</key><array><string>{}</string><string>serve</string><string>--no-open</string><string>--port</string><string>{port}</string></array>
+  <key>WorkingDirectory</key><string>{}</string>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>{}</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>{}</string>
+  <key>StandardErrorPath</key><string>{}</string>
+</dict>
+</plist>
+"#, xml(exe), xml(&dir.display().to_string()), xml(&path), xml(&log.display().to_string()), xml(&log.display().to_string()));
+    let f = plist_path();
+    std::fs::create_dir_all(f.parent().unwrap()).map_err(|e| e.to_string())?;
+    let _ = std::process::Command::new("launchctl").args(["unload", &f.display().to_string()]).output();
+    std::fs::write(&f, plist).map_err(|e| e.to_string())?;
+    let o = std::process::Command::new("launchctl").args(["load", "-w", &f.display().to_string()]).output().map_err(|e| e.to_string())?;
+    if !o.status.success() { return Err(format!("launchctl: {}", String::from_utf8_lossy(&o.stderr).trim())); }
+    Ok(format!("http://127.0.0.1:{port}/#{}", panel_token()?))
+}
+
+pub fn uninstall() -> Result<(), String> {
+    let f = plist_path();
+    if !f.exists() { return Err("the panel does not start with this computer".into()); }
+    let _ = std::process::Command::new("launchctl").args(["unload", "-w", &f.display().to_string()]).output();
+    std::fs::remove_file(&f).map_err(|e| e.to_string())
+}
