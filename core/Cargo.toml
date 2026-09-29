@@ -1,0 +1,26 @@
+[package]
+name = "noroles"
+version = "0.4.0"
+description = "NoRoles: permissions instead of roles, for people and AI agents"
+license = "MIT"
+edition = "2024"
+
+[dependencies]
+base64 = "0.23.1"
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+ed25519-dalek = { version = "3.0.0", features = ["pkcs8", "pem"] }
+getrandom = "0.3"
+hex = "0.4.3"
+pkcs8 = { version = "0.11.0", features = ["encryption", "pem", "std", "getrandom"] }
+rpassword = "7.5.4"
+ryu-js = "1.0.3"
+serde_json = { version = "1.0.151", features = ["preserve_order"] }
+serde_norway = "0.9.42"
+sha2 = "0.11.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
