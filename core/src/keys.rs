@@ -39,6 +39,14 @@ fn write_private(file: &PathBuf, bytes: &[u8]) -> Result<(), String> {
     o.open(file).and_then(|mut f| f.write_all(bytes)).map_err(|e| e.to_string())
 }
 
+/// The public key of a key already on this computer (needs its passphrase).
+pub fn public_of(id: &str, passphrase: &str) -> Result<String, String> {
+    let pem = fs::read_to_string(key_path(id)).map_err(|_| format!("no signing key for {id} on this computer"))?;
+    let key = SigningKey::from_pkcs8_encrypted_pem(&pem, passphrase).map_err(|_| "wrong passphrase".to_string())?;
+    let spki = key.verifying_key().to_public_key_der().map_err(|e| e.to_string())?;
+    Ok(format!("ed25519:{}", B64.encode(spki.as_bytes())))
+}
+
 /// What a person signs: the request, the exact action it approves, and the answer.
 pub fn statement(id: &str, action_hash: &str, answer: &str, at: &str) -> String {
     format!("noroles/1\n{id}\n{action_hash}\n{answer}\n{at}")

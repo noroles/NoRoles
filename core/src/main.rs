@@ -230,6 +230,10 @@ fn write_ledger(dir: &Path, base: &V) {
     std::fs::write(dir.join("ledger.json"), serde_json::to_string_pretty(&l).unwrap() + "\n").unwrap_or_else(|e| fail(&e.to_string()));
 }
 
+fn file_has_key(dir: &Path, who: &str, public: &str) -> bool {
+    read_text(dir, "permissions.md").map(|t| t.lines().any(|l| l.trim_start().starts_with(&format!("{who}:")) && l.contains(public))).unwrap_or(false)
+}
+
 fn main() {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let cmd = argv.first().cloned();
@@ -302,10 +306,16 @@ fn main() {
             need_terminal();
             let dir = find_dir(); let c = company(&dir);
             let who = me(&c).unwrap_or_else(|| fail("your git email is not in permissions.md people"));
-            let p1 = secret("new passphrase (8+ characters): ");
-            let p2 = secret("again: ");
-            if p1 != p2 { fail("passphrases differ"); }
-            let public = ok(keys::keygen(&who, &p1));
+            let public = if keys::key_path(&who).exists() {
+                println!("You already have a signing key ({}). Using it here.", keys::key_path(&who).display());
+                ok(keys::public_of(&who, &secret("its passphrase: ")))
+            } else {
+                let p1 = secret("new passphrase (8+ characters): ");
+                let p2 = secret("again: ");
+                if p1 != p2 { fail("passphrases differ"); }
+                ok(keys::keygen(&who, &p1))
+            };
+            if file_has_key(&dir, &who, &public) { println!("permissions.md already has this key."); return; }
             let genesis = c.requests.is_empty();
             let file = ok(read_text(&dir, "permissions.md"));
             let line = file.lines().find(|l| l.trim_start().starts_with(&format!("{who}:")) && l.contains('{') && l.trim_end().ends_with('}')).map(String::from);
