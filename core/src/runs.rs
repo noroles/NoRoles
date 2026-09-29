@@ -230,7 +230,7 @@ pub fn get(dir: &Path, id: &str) -> Result<V, String> {
 }
 
 /// After a person answers a request, resume every finished run that was waiting on it.
-pub fn answered(dir: &Path, request: &str, yes: bool, reason: &str) {
+pub fn answered(dir: &Path, request: &str, who: &str, yes: bool, reason: &str) {
     let Ok(rd) = fs::read_dir(runs_dir(dir)) else { return };
     for e in rd.filter_map(|e| e.ok()) {
         let name = e.file_name().to_string_lossy().into_owned();
@@ -239,8 +239,8 @@ pub fn answered(dir: &Path, request: &str, yes: bool, reason: &str) {
         if !raw.contains(request) { continue; }
         let Some(m) = read_meta(dir, id) else { continue };
         if s(&m, "status") == Some("running") && alive(&m) { continue; }
-        let note = if yes { format!("Ilia approved {request}. Call the same tool again with exactly the same arguments, then finish the task.") }
-                   else { format!("Ilia declined {request}{}. Do not do it. Finish the task without it and say what you would do instead.", if reason.is_empty() { String::new() } else { format!(": {reason}") }) };
+        let note = if yes { format!("{who} approved {request}. Call the same tool again with exactly the same arguments, then finish the task.") }
+                   else { format!("{who} declined {request}{}. Do not do it. Finish the task without it and say what you would do instead.", if reason.is_empty() { String::new() } else { format!(": {reason}") }) };
         let _ = resume(dir, id, &note);
     }
 }

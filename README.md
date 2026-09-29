@@ -15,6 +15,7 @@ npx noroles init my-company
 | [`MANIFESTO.md`](MANIFESTO.md) | eighteen principles: how we think and work |
 | [`SPEC.md`](SPEC.md) | the model: permissions, mandates, rules, eight laws, and what the orchestrator must enforce |
 | [`npm/`](npm) | the `noroles` command line: start a company, ask for a yes, sign it, run agents with only the keys their mandate allows |
+| [`core/`](core) | the same engine in Rust, plus a Claude Code hook that checks every tool call and a local panel for people (build with `cargo build --release`; not on npm yet) |
 
 ## How work runs
 
@@ -29,6 +30,15 @@ noroles mcp-config first-website --as me-agent > .mcp.json   # every tool call g
 ```
 
 See [`npm/README.md`](npm/README.md) for what the code enforces today and what it does not yet.
+
+### With Claude Code, for every tool you already use
+
+```bash
+noroles hook install --as me-agent   # every tool call goes through NoRoles: Gmail, Slack, Linear, any MCP server
+noroles serve install                # a panel on this computer: answer requests, start agents, see what they did
+```
+
+`tools.md` says which tool calls need a yes (sending, paying, deleting, sharing); reading and drafts run at once. A refused call becomes a request in the panel; after the yes, the same call with the same arguments passes, once. This is in [`core/`](core), the Rust version: about 5 ms per checked call.
 
 ## Contributing
 

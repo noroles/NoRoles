@@ -90,7 +90,7 @@ fn act(dir: &Path, me: &str, path: &str, body: &V) -> Result<V, String> {
             let r = requests::decide(dir, &st("id"), me, yes, Some(reason.as_str()).filter(|x| !x.is_empty()), proof, now)?;
             // an agent waiting on this answer goes on by itself
             let settled = status(&r) == "approved" || status(&r) == "denied";
-            if settled { crate::runs::answered(dir, &st("id"), status(&r) == "approved", &reason); }
+            if settled { crate::runs::answered(dir, &st("id"), me, status(&r) == "approved", &reason); }
             Ok(json!({ "id": g(&r, "id"), "status": g(&r, "status") }))
         }
         "/api/open" => { let r = requests::open_mandate(dir, &st("mandate"), me, now)?; Ok(json!({ "id": g(&r, "id"), "status": g(&r, "status") })) }
