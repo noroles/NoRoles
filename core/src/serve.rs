@@ -65,6 +65,7 @@ pub fn state(dir: &Path, me: Option<&str>) -> Result<V, String> {
     let people: Vec<V> = c.people.iter().map(|(id, p)| json!({ "id": id, "name": g(p, "name"), "email": g(p, "email"), "signed": s(p, "key").is_some(), "root": c.root.contains(id) })).collect();
     let agents: Vec<V> = c.agents.iter().map(|(id, a)| json!({ "id": id, "works_for": g(a, "works_for") })).collect();
     let incidents: Vec<V> = requests::incidents(dir).into_iter().filter(|i| !truthy(g(i, "resolved"))).collect();
+    let runs = crate::runs::list(dir);
     let problems: Vec<V> = check(&c, now).into_iter().map(|p| json!({ "error": p.error, "where": p.r#where, "msg": p.msg })).collect();
     Ok(json!({
         "company": dir.file_name().map(|x| x.to_string_lossy().into_owned()), "dir": dir.display().to_string(),
@@ -73,7 +74,8 @@ pub fn state(dir: &Path, me: Option<&str>) -> Result<V, String> {
         "permissions": permissions, "people": people, "agents": agents,
         "tools": c.tools.iter().map(|(k, v)| json!({ "pattern": k, "rule": v })).collect::<Vec<_>>(),
         "incidents": incidents, "problems": problems, "calls": read_calls(dir, 60),
-        "claude": crate::runs::signed_in(), "login_url": if crate::runs::signed_in() { None } else { crate::runs::login_url(dir) }, "runs": crate::runs::list(dir),
+        "board": crate::board::cards(&c, dir, &runs, now), "labels": c.permissions.keys().filter(|p| *p != "rule.change").map(|p| json!({ "permission": p, "label": crate::board::label(p) })).collect::<Vec<_>>(),
+        "claude": crate::runs::signed_in(), "login_url": if crate::runs::signed_in() { None } else { crate::runs::login_url(dir) }, "runs": runs,
     }))
 }
 
@@ -107,6 +109,10 @@ fn act(dir: &Path, me: &str, path: &str, body: &V) -> Result<V, String> {
         "/api/run" => crate::runs::start(dir, &st("mandate"), &st("task")),
         "/api/run/stop" => { crate::runs::stop(dir, &st("id"))?; Ok(json!({ "ok": true })) }
         "/api/run/continue" => { crate::runs::resume(dir, &st("id"), &st("note"))?; Ok(json!({ "ok": true })) }
+        "/api/draft" => crate::board::draft(dir, &st("idea"), s(body, "who").unwrap_or("agent"), me),
+        "/api/mandate/create" => crate::board::create(dir, me, g(body, "draft"), &st("passphrase"), g(body, "start").as_bool().unwrap_or(true)),
+        "/api/mandate/start" => crate::board::open(dir, me, &st("mandate"), &st("passphrase")),
+        "/api/mandate/done" => { requests::close(dir, &st("mandate"), me, &st("note"), now)?; Ok(json!({ "ok": true })) }
         "/api/login" => { crate::runs::login(dir)?; Ok(json!({ "ok": true })) }
         _ => Err("no such action".into()),
     }
@@ -133,8 +139,20 @@ pub fn serve(dir: PathBuf, me: String, port: u16, open_browser: bool) -> Result<
     println!("NoRoles panel for {} ({me}): {url}\nIt runs on this computer only. Close this window or press Ctrl-C to stop it.", dir.display());
     if open_browser && cfg!(target_os = "macos") { let _ = std::process::Command::new("open").arg(&url).status(); }
     let hosts = [format!("127.0.0.1:{port}"), format!("localhost:{port}")];
-    for mut req in server.incoming_requests() {
-        let host_ok = req.headers().iter().any(|h| h.field.equiv("Host") && hosts.contains(&h.value.as_str().to_string()));
+    let dir2 = dir.clone();
+    std::thread::spawn(move || loop { std::thread::sleep(std::time::Duration::from_secs(60)); let _g = WRITE.lock(); crate::board::check_ins(&dir2); });
+    let (dir, me, token, hosts) = (std::sync::Arc::new(dir), std::sync::Arc::new(me), std::sync::Arc::new(token), std::sync::Arc::new(hosts));
+    for req in server.incoming_requests() {
+        let (dir, me, token, hosts) = (dir.clone(), me.clone(), token.clone(), hosts.clone());
+        std::thread::spawn(move || handle(req, &dir, &me, &token, &hosts[..]));
+    }
+    Ok(())
+}
+
+static WRITE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn handle(mut req: tiny_http::Request, dir: &Path, me: &str, token: &str, hosts: &[String]) {
+        let host_ok = req.headers().iter().any(|h| h.field.equiv("Host") && hosts.iter().any(|x| x == h.value.as_str()));
         let token_ok = req.headers().iter().any(|h| h.field.equiv("X-NoRoles-Token") && h.value.as_str() == token);
         let path = req.url().split('?').next().unwrap_or("/").to_string();
         let reply = |code: u16, ctype: &str, body: String| {
@@ -144,22 +162,20 @@ pub fn serve(dir: PathBuf, me: String, port: u16, open_browser: bool) -> Result<
                 .with_header(tiny_http::Header::from_bytes("X-Frame-Options", "DENY").unwrap())
                 .with_header(tiny_http::Header::from_bytes("Content-Security-Policy", "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src 'self'; frame-ancestors 'none'").unwrap())
         };
-        if !host_ok { let _ = req.respond(reply(403, "text/plain", "wrong host".into())); continue; }
-        if path == "/" && req.method() == &tiny_http::Method::Get { let _ = req.respond(reply(200, "text/html; charset=utf-8", PAGE.into())); continue; }
-        if !token_ok { let _ = req.respond(reply(401, "application/json", json!({ "error": "open the panel from the link noroles serve printed" }).to_string())); continue; }
+        if !host_ok { let _ = req.respond(reply(403, "text/plain", "wrong host".into())); return; }
+        if path == "/" && req.method() == &tiny_http::Method::Get { let _ = req.respond(reply(200, "text/html; charset=utf-8", PAGE.into())); return; }
+        if !token_ok { let _ = req.respond(reply(401, "application/json", json!({ "error": "open the panel from the link noroles serve printed" }).to_string())); return; }
         let res = if path == "/api/state" && req.method() == &tiny_http::Method::Get {
-            state(&dir, Some(&me))
+            state(dir, Some(me))
         } else if req.method() == &tiny_http::Method::Post && path.starts_with("/api/") {
             let mut body = String::new();
             let _ = req.as_reader().take(1 << 20).read_to_string(&mut body);
             let v: V = serde_json::from_str(&body).unwrap_or(json!({}));
-            act(&dir, &me, &path, &v)
+            { let slow = path == "/api/draft"; let _g = if slow { None } else { Some(WRITE.lock()) }; act(dir, me, &path, &v) }
         } else { Err("not found".into()) };
         let (code, body) = match res { Ok(v) => (200, v.to_string()), Err(e) => (400, json!({ "error": e }).to_string()) };
         let _ = req.respond(reply(code, "application/json", body));
     }
-    Ok(())
-}
 
 // ---------- start with the Mac ----------
 

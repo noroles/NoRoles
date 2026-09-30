@@ -269,6 +269,7 @@ pub fn is_approved(c: &Company, r: &V, now: i64, ignore_done: bool) -> bool {
     if action_hash(r) != s(r, "action_hash").unwrap_or("") { return false; }
     if g(r, "denials").as_array().map(|d| d.iter().any(|x| valid_answer(c, r, x, "no"))).unwrap_or(false) { return false; }
     if kind(r) == "stop" { return true; }
+    if kind(r) == "close" { return c.mandate(s(r, "mandate").unwrap_or("")).and_then(|m| s(m, "holder")) == s(r, "asker") || c.root.iter().any(|x| Some(x.as_str()) == s(r, "asker")); }
     let mname = s(r, "mandate").unwrap_or("");
     if kind(r) == "open" && mandate_can(c.mandate(mname).unwrap_or(&V::Null)).perms.is_empty() { return true; }
     if let Some(cov) = s(r, "covered_by") {
@@ -303,7 +304,12 @@ fn mandate_state_d(c: &Company, name: &str, now: i64, depth: usize) -> (bool, St
     if let Some(end) = mandate_end(m) { if now > end + DAY { return (false, format!("ended {}", &iso(end)[..10])); } }
     if let Some(st) = stopped_by(c, name, now) { return (false, format!("stopped by {}: {}", s(st, "asker").unwrap_or(""), s(g(st, "action"), "summary").unwrap_or(""))); }
     let opens: Vec<&V> = c.requests.values().filter(|r| kind(r) == "open" && s(r, "mandate") == Some(name)).collect();
-    if opens.iter().any(|r| s(r, "mandate_hash") == s(m, "hash") && is_approved(c, r, now, false)) { return (true, "open".into()); }
+    // a mandate its holder marked done stays closed until it is opened again
+    let last_open = opens.iter().filter(|r| s(r, "mandate_hash") == s(m, "hash") && is_approved(c, r, now, false)).map(|r| created(r)).max();
+    if let Some(cl) = c.requests.values().filter(|r| kind(r) == "close" && s(r, "mandate") == Some(name)).max_by_key(|r| created(r)) {
+        if last_open.is_none_or(|o| created(cl) >= o) && is_approved(c, cl, now, false) { return (false, format!("done: {}", s(g(cl, "action"), "summary").unwrap_or(""))); }
+    }
+    if last_open.is_some() { return (true, "open".into()); }
     if depth < 50 {
         for p in c.mandates.values() {
             if listk(p, "parts").iter().any(|x| x == name) && mandate_state_d(c, s(p, "name").unwrap_or(""), now, depth + 1).0 { return (true, format!("part of {}", s(p, "name").unwrap_or(""))); }

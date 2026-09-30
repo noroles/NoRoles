@@ -68,7 +68,10 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px 
 .btn.yes:hover{filter:brightness(1.1);background:var(--accent);color:var(--accent-ink)}
 .btn.small{padding:7px 10px;font-size:15px}
 .btn[disabled]{opacity:.5;cursor:wait}
-.field{width:100%;border:1px solid var(--line);background:var(--paper);padding:9px 11px}
+.field{width:100%;border:1px solid var(--line);background:var(--paper);padding:9px 11px;color:var(--ink)}
+.field::placeholder{color:var(--faint)}
+a.btn{text-decoration:none;display:inline-block;color:inherit}
+a.btn.yes{color:var(--accent-ink)}
 .field:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
 .err{color:var(--alarm);font-size:14px}
 .okmsg{color:var(--ok);font-size:14px}
@@ -109,6 +112,40 @@ td.c{text-align:center}
 .tag{font:500 12.5px var(--mono)}
 .tag.open{color:var(--faint)}.tag.asked{color:var(--accent)}.tag.approved,.tag.done{color:var(--ok)}.tag.refused,.tag.denied,.tag.expired,.tag.void{color:var(--alarm)}
 .inc{border:1px solid var(--alarm);background:var(--paper);padding:14px 18px;margin-bottom:10px}
+/* board */
+.bhead{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.bhead h1{margin:0}
+.cols{display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px;align-items:start}
+.col{background:var(--wash);border:1px solid var(--line2);padding:10px;display:flex;flex-direction:column;gap:10px;min-height:120px}
+.col h3{margin:2px 4px 2px;font:600 17px/1 var(--display);letter-spacing:.03em;color:var(--soft);display:flex;gap:8px}
+.col h3 .c{color:var(--faint);font:500 13px var(--mono)}
+.col.needs{border-color:var(--accent)}.col.needs h3{color:var(--accent)}
+.col.blocked h3{color:var(--alarm)}
+.card{background:var(--paper);border:1px solid var(--line);padding:12px 14px;display:grid;gap:6px;text-decoration:none;color:inherit;transition:border-color .15s,transform .12s}
+.card:hover{border-color:var(--ink);transform:translateY(-1px)}
+.card .t{font:600 19px/1.15 var(--display);overflow-wrap:anywhere}
+.card .l{font-size:14px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.card .f{font-size:12.5px;color:var(--faint);display:flex;gap:10px;flex-wrap:wrap}
+.col.needs .card{border-left:3px solid var(--accent)}
+.col.blocked .card{border-left:3px solid var(--alarm)}
+.back{color:var(--soft);text-decoration:none;font:600 16px var(--display);letter-spacing:.03em;display:inline-block;margin-bottom:14px}
+.back:hover{color:var(--ink)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:0 0 20px}
+.facts div{background:var(--paper);padding:14px 16px}
+.facts dt{color:var(--faint);font-size:13px;margin-bottom:3px}.facts dd{margin:0;font-size:16px;overflow-wrap:anywhere}
+.facts .wide{grid-column:1/-1}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--paper);padding:8px 12px;cursor:pointer;font-size:14px;text-align:left;transition:border-color .15s}
+.chip:hover{border-color:var(--ink)}
+.chip.on{border-color:var(--accent);background:var(--wash);color:var(--ink);outline:1px solid var(--accent)}
+.idea{min-height:150px;font-size:18px;line-height:1.45}
+.form{display:grid;gap:14px}
+.form label{display:grid;gap:5px;color:var(--faint);font-size:13.5px}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.form label.check{display:flex;gap:10px;align-items:flex-start;color:var(--ink);font-size:15px;cursor:pointer}
+.check input{margin-top:4px}
+.note{border-left:3px solid var(--gold);background:var(--wash);padding:10px 14px;font-size:14.5px}
+.busy{display:flex;gap:10px;align-items:center;color:var(--soft);padding:18px 0}
 /* agents */
 .task{background:var(--paper);border:1px solid var(--line);padding:20px 22px;display:grid;gap:12px;margin-bottom:28px}
 .task textarea{min-height:92px;resize:vertical;line-height:1.45}
@@ -140,6 +177,8 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
   .req{grid-template-columns:1fr}.req .side{border-left:0;border-top:1px solid var(--line)}
   .bento{grid-template-columns:1fr}
   .ev{grid-template-columns:70px minmax(0,1fr)}.ev .t2{display:none}
+  .cols{grid-template-columns:repeat(5,minmax(240px,82vw))}
+  .facts,.form .two{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -148,9 +187,8 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
   <nav>
     <div class="brand">NoRoles</div>
     <div class="co" id="co"></div>
+    <a href="#board" data-v="board"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3h4v14H2zM8 3h4v9H8zM14 3h4v6h-4z"/></svg>Board<span class="n" id="n-run"></span></a>
     <a href="#inbox" data-v="inbox"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11h5l1.5 2.5h3L13 11h5M2 11l2.5-7h11L18 11v6H2z"/></svg>Inbox<span class="n" id="n-inbox"></span></a>
-    <a href="#agents" data-v="agents"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="14" height="10"/><path d="M10 2v4M7 11h.01M13 11h.01M7.5 14h5"/></svg>Agents<span class="n" id="n-run"></span></a>
-    <a href="#mandates" data-v="mandates"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2h9l3 3v13H4zM7 8h6M7 11h6M7 14h4"/></svg>Mandates</a>
     <a href="#people" data-v="people"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="3"/><path d="M1.5 17c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5M13 4.5a3 3 0 010 5.5M15 12.8c1.8.6 3 2 3.4 4.2"/></svg>People</a>
     <a href="#activity" data-v="activity"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 10h4l2.5-6 4 12 2.5-6h4"/></svg>Activity<span class="n" id="n-inc"></span></a>
     <div class="foot">
@@ -163,11 +201,11 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 <script>
 (() => {
 const token = location.hash.length > 20 ? location.hash.slice(1) : (sessionStorage.getItem('nr-token') || '');
-if (token) { try { sessionStorage.setItem('nr-token', token); } catch {} history.replaceState(null, '', location.pathname + '#inbox'); }
+if (token) { try { sessionStorage.setItem('nr-token', token); } catch {} history.replaceState(null, '', location.pathname + '#board'); }
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ICON_FLAG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5l7 13H1zM8 6v4M8 12v.5"/></svg>';
-let S = null, last = '', view = 'inbox';
+let S = null, last = '', view = 'board', arg = '';
 const ui = {}; // open forms and messages, kept across refreshes: ui[id] = { mode, msg, err }
 
 // theme: follows the system unless chosen; remembered on this computer
@@ -240,32 +278,6 @@ function inbox() {
   return h;
 }
 
-// ---------- mandates ----------
-function mandates() {
-  const ms = S.mandates;
-  let h = `<h1>Mandates</h1><p class="lead">A mandate is a goal with limits: what an agent works toward, what it may do, when it stops. Opening one takes your yes once; everything outside its limits still asks.</p>`;
-  h += `<div class="bento">${ms.map((m, i) => {
-    const st = ui['m-' + m.name] || {};
-    const stopped = /^stopped/.test(m.why);
-    const size = ms.length % 2 === 1 && i === 0 ? 'first' : '';
-    const state = m.active ? '<span class="state on">active</span>' : stopped ? '<span class="state stop">stopped</span>' : `<span class="state off">${m.opened_pending ? 'waiting for yes' : 'closed'}</span>`;
-    let actions = '';
-    if (st.mode === 'stop') actions = `<input class="field" id="stop-${m.name}" placeholder="What did you see? The holder reviews it within 24h" data-enter="stop" data-id="${m.name}"><button class="btn" data-act="stop" data-id="${m.name}">Stop it now</button><button class="btn small" data-act="mcancel" data-id="${m.name}">Back</button>`;
-    else if (m.active) actions = `<span class="days">${daysLeft(m.ends)}</span><span style="flex:1"></span><button class="btn small" data-act="stopform" data-id="${m.name}">Stop</button>`;
-    else if (stopped) actions = `<span class="err">${esc(m.why)}</span><span style="flex:1"></span><button class="btn small" data-act="resume" data-id="${m.name}">Lift the stop</button>`;
-    else if (m.opened_pending) actions = `<a class="btn small" href="#inbox">Answer in Inbox</a>`;
-    else actions = `<span class="muted">${esc(m.why)}</span><span style="flex:1"></span><button class="btn small yes" data-act="open" data-id="${m.name}">Open</button>`;
-    return `<section class="m ${size}">
-      <div class="top"><span class="name">${esc(m.name)}</span>${state}</div>
-      <div class="intent">${esc(m.intent)}</div>
-      <dl class="kv"><dt>Measured by</dt><dd>${esc(m.metric)}</dd><dt>Stop if</dt><dd>${esc(m.stop_if)}</dd><dt>People</dt><dd>${esc(m.holder)} holds it · ${esc(m.executor.join(', '))} does it</dd></dl>
-      <div class="perms">${Object.entries(m.can).map(([p, l]) => `<span class="perm" title="${esc(JSON.stringify(l))}">${esc(p)}${l && l.amount != null ? ' ≤ ' + esc(l.amount) : ''}</span>`).join('') || '<span class="muted">nothing lasting</span>'}</div>
-      <div class="row">${actions}</div>${st.err ? `<div class="err">${esc(st.err)}</div>` : ''}
-    </section>`;
-  }).join('')}</div>`;
-  return h;
-}
-
 // ---------- people ----------
 function people() {
   let h = `<h1>People</h1><p class="lead">Nobody has a role. Each permission below is the right to say yes to one kind of action that can’t be undone. Agents hold none: an agent acts with its person’s permissions, never more.</p>`;
@@ -320,36 +332,101 @@ function runCard(r) {
   </article>`;
 }
 
-function agents() {
-  const active = S.mandates.filter((m) => m.active);
-  const st = ui.task || {};
-  let h = `<h1>Agents</h1><p class="lead">Give an agent a task inside a mandate. It works on its own here on this computer, with your tools. Anything it can undo, it just does; anything it can’t lands in your Inbox, and after your answer it goes on by itself.</p>`;
-  if (!S.claude) h += `<div class="banner" style="border-color:var(--accent);background:var(--wash);color:var(--ink)"><b>Claude is not signed in on this computer.</b> Agents run on your Claude account. ${st.login ? 'A sign-in page should have opened in your browser; this updates once you are in.' : ''}${S.login_url ? ` If it did not open: <a href="${esc(S.login_url)}" target="_blank" rel="noopener" style="color:var(--accent)">open the sign-in page</a>.` : ''}<div class="row" style="border:0;padding:8px 0 0;margin:0"><button class="btn small yes" data-act="login">Sign in</button></div></div>`;
-  if (!active.length) h += `<div class="banner">No mandate is open. Open one in Mandates first.</div>`;
-  else h += `<div class="task">
-    <label class="muted" for="task-text">Task</label>
-    <textarea class="field" id="task-text" placeholder="For example: find partner emails from this week that still need an answer and draft the replies">${esc(st.text || '')}</textarea>
-    <div class="row"><select class="field" id="task-mandate">${active.map((m) => `<option value="${esc(m.name)}" ${st.mandate === m.name ? 'selected' : ''}>${esc(m.name)}: ${esc(m.intent)}</option>`).join('')}</select><span style="flex:1"></span><button class="btn yes" data-act="run" ${S.claude ? '' : 'disabled'}>Start</button></div>
-    ${st.err ? `<div class="err">${esc(st.err)}</div>` : ''}
-  </div>`;
-  h += S.runs.length ? S.runs.map(runCard).join('') : `<div class="empty"><div class="big">No tasks yet</div><p class="muted">Write one above. You will see every step here, and every call NoRoles stopped.</p></div>`;
+// ---------- board ----------
+const COLS = [['planned', 'Planned'], ['working', 'In progress'], ['needs', 'Needs you'], ['blocked', 'Blocked'], ['done', 'Done']];
+const whoName = (id) => { const p = (S.people || []).find((x) => x.id === id); return p ? (p.id === S.me ? 'You' : p.name || p.id) : 'Agent'; };
+function board() {
+  let h = `<div class="bhead"><h1>Mandates</h1><span style="flex:1"></span><a class="btn yes" href="#new">New mandate</a></div>`;
+  if (!S.board.length) return h + `<div class="empty"><div class="big">Nothing here yet</div><p class="muted">A mandate is one piece of work with a goal. Write what should happen and who does it; the rest is set up for you.</p><div class="row" style="border:0;padding:0"><a class="btn yes" href="#new">New mandate</a></div></div>`;
+  h += `<div class="cols">${COLS.map(([k, t]) => { const cs = S.board.filter((m) => m.column === k); return `<section class="col ${k}"><h3>${t}<span class="c">${cs.length || ''}</span></h3>${cs.map((m) => `<a class="card" href="#m-${esc(m.name)}"><span class="t">${esc(m.title)}</span><span class="l">${esc(m.line || m.goal)}</span><span class="f"><span>${m.agent ? 'Agent' : esc(whoName(m.executor[0]))}</span>${m.check_in !== 'none' ? `<span>checks in ${esc(m.check_in)}</span>` : ''}${m.ends && k !== 'done' ? `<span>${daysLeft(m.ends)}</span>` : ''}</span></a>`).join('')}</section>`; }).join('')}</div>`;
   return h;
 }
 
-const VIEWS = { inbox, agents, mandates, people, activity };
+function detail() {
+  const m = S.board.find((x) => x.name === arg);
+  if (!m) return `<a class="back" href="#board">← Board</a><h1>Not found</h1>`;
+  const st = ui['d-' + m.name] || {};
+  const reqs = S.pending.filter((r) => r.mandate === m.name);
+  const runs = S.runs.filter((r) => r.mandate === m.name);
+  const colName = Object.fromEntries(COLS)[m.column];
+  let h = `<a class="back" href="#board">← Board</a><div class="meta"><span class="st ${m.column === 'needs' ? 'waiting' : m.column === 'working' ? 'working' : m.column === 'done' ? 'done' : 'stopped'}">${esc(colName)}</span></div><h1>${esc(m.title)}</h1><p class="lead">${esc(m.line)}</p>`;
+  h += `<dl class="facts"><div class="wide"><dt>Goal</dt><dd>${esc(m.goal)}</dd></div><div><dt>Done when</dt><dd>${esc(m.done_when)}</dd></div><div><dt>Stop and ask if</dt><dd>${esc(m.stop_if)}</dd></div><div><dt>Needs your yes to</dt><dd>${m.needs_yes.map((n) => esc(n.label) + (n.amount != null ? ` (up to ${esc(n.amount)})` : '')).join('<br>') || 'nothing: it only does things that can be undone'}</dd></div><div><dt>Who</dt><dd>${m.agent ? 'An agent, for ' + esc(whoName(m.holder)) : esc(whoName(m.executor[0]))}${m.check_in !== 'none' ? ` · checks in ${esc(m.check_in)}` : ''}${m.ends ? ` · ${daysLeft(m.ends)}` : ''}</dd></div></dl>`;
+  if (reqs.length) h += `<h2>Waiting for you</h2>` + reqs.map(reqCard).join('');
+  let actions = '';
+  if (m.column === 'planned' || (m.column === 'done' && st.mode === 'restart')) actions = `<input class="field" type="password" id="pw-d-${m.name}" placeholder="Passphrase of your signing key" data-enter="mstart" data-id="${m.name}" style="max-width:280px"><button class="btn yes" data-act="mstart" data-id="${m.name}">Start</button>`;
+  else if (m.column === 'done') actions = `<button class="btn" data-act="restartform" data-id="${m.name}">Start again</button>`;
+  else if (/^stopped/.test(m.line)) actions = `<button class="btn" data-act="resume" data-id="${m.name}">Lift the stop</button>`;
+  else if (st.mode === 'stop') actions = `<input class="field" id="stop-${m.name}" placeholder="What did you see?" data-enter="stop" data-id="${m.name}" style="flex:1;min-width:220px"><button class="btn" data-act="stop" data-id="${m.name}">Stop it now</button>`;
+  else if (m.column !== 'needs' || !reqs.some((r) => r.kind === 'open')) actions = `<button class="btn yes" data-act="mdone" data-id="${m.name}">Mark done</button><button class="btn" data-act="stopform" data-id="${m.name}">Stop</button>`;
+  if (actions) h += `<div class="row" style="border:0;padding:0;margin:0 0 8px">${actions}</div>`;
+  if (st.err) h += `<p class="err">${esc(st.err)}</p>`;
+  const live = m.column === 'working' || m.column === 'blocked' || m.column === 'needs';
+  if (m.agent && live && !reqs.some((r) => r.kind === 'open')) {
+    const t = ui.task || {};
+    h += `<h2>Give the agent a task</h2><div class="task"><textarea class="field" id="task-text" placeholder="What should it do now?">${esc(t.mandate === m.name ? t.text || '' : '')}</textarea><input type="hidden" id="task-mandate" value="${esc(m.name)}"><div class="row">${S.claude ? '' : '<button class="btn small" data-act="login">Sign in to Claude first</button>'}<span style="flex:1"></span><button class="btn yes" data-act="run" ${S.claude ? '' : 'disabled'}>Start</button></div>${t.err ? `<div class="err">${esc(t.err)}</div>` : ''}</div>`;
+  }
+  if (runs.length) h += `<h2>What the agent did</h2>` + runs.map(runCard).join('');
+  return h;
+}
+
+const TEMPLATES = [
+  ['Answer partners', 'Every morning, find emails from partners and agencies that wait for my reply, draft the answers, and send each one only after my yes.'],
+  ['Monthly invoice', 'Prepare this month’s invoice from last month’s, check the amount, period and recipients, and send it after my yes.'],
+  ['Competitor watch', 'Every Monday, check what changed on our main competitors’ websites and pricing, and send me a short report.'],
+  ['Paid traffic', 'Every day, check paid traffic by source, flag sources that burn money without conversions, and propose budget changes for my yes.'],
+];
+function newm() {
+  const n = ui.new || (ui.new = { who: 'agent', idea: '' });
+  const others = (S.people || []).filter((p) => p.id !== S.me);
+  let h = `<a class="back" href="#board">← Board</a><h1>New mandate</h1>`;
+  if (!n.draft) {
+    h += `<p class="lead">Say what should happen, in your own words. Type it, dictate it, or point to a doc, a ticket or a thread: the agent reads it and writes the mandate for you.</p>`;
+    h += `<div class="form"><textarea class="field idea" id="idea" placeholder="For example: every morning answer partner emails, but ask me before anything is sent">${esc(n.idea)}</textarea>
+      <div class="chips">${TEMPLATES.map(([t, x], i) => `<button class="chip" data-act="tpl" data-id="${i}">${esc(t)}</button>`).join('')}</div>
+      <label>Who does it<div class="chips"><button class="chip ${n.who === 'agent' ? 'on' : ''}" data-act="who" data-id="agent">An agent</button><button class="chip ${n.who === S.me ? 'on' : ''}" data-act="who" data-id="${esc(S.me)}">Me</button>${others.map((p) => `<button class="chip ${n.who === p.id ? 'on' : ''}" data-act="who" data-id="${esc(p.id)}">${esc(p.name || p.id)}</button>`).join('')}</div></label>
+      ${n.busy ? '<div class="busy"><span class="pulse"></span>The agent is writing the mandate. This takes up to a minute.</div>' : `<div class="row" style="border:0;padding:0;margin:0"><button class="btn yes" data-act="draft" ${S.claude ? '' : 'disabled'}>Write the mandate</button><button class="btn small" data-act="blank">Fill it in myself</button>${S.claude ? '' : '<button class="btn small" data-act="login">Sign in to Claude first</button>'}</div>`}
+      ${n.err ? `<div class="err">${esc(n.err)}</div>` : ''}</div>`;
+    return h;
+  }
+  const d = n.draft;
+  const has = (p) => (d.needs_yes || []).includes(p);
+  h += `<p class="lead">Check it, change anything, then start. Everything that can be undone the agent just does; the things ticked below wait for your yes each time.</p>`;
+  if (d.unclear) h += `<div class="note">Assumed: ${esc(d.unclear)}</div><p></p>`;
+  h += `<div class="form">
+    <label>Name<input class="field" id="d-title" value="${esc(d.title || '')}"></label>
+    <label>Goal<textarea class="field" id="d-goal">${esc(d.goal || '')}</textarea></label>
+    <div class="two"><label>Done when<textarea class="field" id="d-done">${esc(d.done_when || '')}</textarea></label><label>Stop and ask me if<textarea class="field" id="d-stop">${esc(d.stop_if || '')}</textarea></label></div>
+    <label>Needs my yes to<div style="display:grid;gap:6px">${S.labels.map((l) => `<label class="check"><input type="checkbox" class="d-perm" value="${esc(l.permission)}" ${has(l.permission) ? 'checked' : ''}>${esc(l.label)}</label>`).join('')}</div></label>
+    ${has('money.spend') || S.labels.some((l) => l.permission === 'money.spend') ? `<label>Spending limit per payment (empty: no limit, every payment still asks)<input class="field" id="d-amount" inputmode="decimal" value="${esc((d.limits || {})['money.spend'] || '')}" style="max-width:200px"></label>` : ''}
+    <div class="two"><label>How long<select class="field" id="d-kind"><option value="one-off" ${String(d.kind).startsWith('ongoing') ? '' : 'selected'}>One piece of work, done in</option><option value="ongoing" ${String(d.kind).startsWith('ongoing') ? 'selected' : ''}>Ongoing, reviewed after</option></select><input class="field" id="d-days" inputmode="numeric" value="${esc(d.days || 30)}" style="max-width:120px"> days (at most 90)</label>
+    <label>Check-ins<select class="field" id="d-check"><option value="none">None: tell me when it’s done</option><option value="daily" ${d.check_in === 'daily' ? 'selected' : ''}>Every day</option><option value="weekly" ${d.check_in === 'weekly' ? 'selected' : ''}>Every week</option></select></label></div>
+    <label>First step for the agent<textarea class="field" id="d-first">${esc(d.first_step || '')}</textarea></label>
+    <div class="row" style="border:0;padding:0;margin:0"><input class="field" type="password" id="d-pw" placeholder="Passphrase of your signing key" style="max-width:260px" data-enter="create" data-id="start"><button class="btn yes" data-act="create" data-id="start">Start</button><button class="btn small" data-act="create" data-id="later">Save for later</button><button class="btn small" data-act="restartnew">Start over</button></div>
+    ${n.err ? `<div class="err">${esc(n.err)}</div>` : ''}${n.busy ? '<div class="busy"><span class="pulse"></span>Starting…</div>' : ''}
+  </div>`;
+  return h;
+}
+function readDraft() {
+  const v = (id) => ($('#' + id) || {}).value || '';
+  const perms = [...document.querySelectorAll('.d-perm')].filter((x) => x.checked).map((x) => x.value);
+  const amount = parseFloat(v('d-amount'));
+  return { ...ui.new.draft, title: v('d-title'), goal: v('d-goal'), done_when: v('d-done'), stop_if: v('d-stop'), needs_yes: perms, limits: isFinite(amount) && amount > 0 ? { 'money.spend': amount } : {}, kind: v('d-kind'), days: parseInt(v('d-days'), 10) || 30, check_in: v('d-check'), first_step: v('d-first'), who: ui.new.who };
+}
+
+const VIEWS = { board, detail, new: newm, inbox, people, activity };
 function render(force) {
   if (!S) return;
   const typing = document.activeElement && document.activeElement.matches('input,textarea');
-  const key = JSON.stringify([S, ui, view]);
+  const key = JSON.stringify([S, ui, view, arg]);
   if (!force && (key === last || typing)) return;
   last = key;
   $('#co').textContent = S.company || '';
   $('#me').textContent = S.me ? 'You are ' + S.me : '';
   $('#n-inbox').textContent = S.pending.filter((r) => (r.progress || []).some((p) => p.can.includes(S.me))).length || '';
   $('#n-inc').textContent = S.incidents.length || '';
-  $('#n-run').textContent = S.runs.filter((r) => r.status === 'working').length || '';
+  $('#n-run').textContent = S.board.filter((m) => m.column === 'needs').length || '';
   document.title = (S.pending.length ? `(${S.pending.length}) ` : '') + 'NoRoles';
-  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.v === view));
+  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('on', a.dataset.v === (['detail', 'new'].includes(view) ? 'board' : view)));
   $('#view').innerHTML = VIEWS[view]();
   const focus = document.querySelector('[data-autofocus]') || document.querySelector('.req .side input, .m input, .inc input');
   if (focus) focus.focus();
@@ -373,11 +450,30 @@ async function run(act, id) {
       delete ui[id];
     }
     if (act === 'open') { const r = await api('/api/open', { mandate: id }); view = 'inbox'; location.hash = 'inbox'; if (r.id) ui[r.id] = { mode: 'yes' }; }
-    if (act === 'stopform') return set('m-' + id, { mode: 'stop', err: '' });
+    if (act === 'stopform') return set('d-' + id, { mode: 'stop', err: '' });
     if (act === 'mcancel') { delete ui['m-' + id]; return render(true); }
-    if (act === 'stop') { await api('/api/stop', { mandate: id, reason: $('#stop-' + id)?.value || '' }); delete ui['m-' + id]; }
-    if (act === 'resume') { const r = await api('/api/resume', { mandate: id }); view = 'inbox'; location.hash = 'inbox'; if (r.id) ui[r.id] = { mode: 'yes' }; }
+    if (act === 'stop') { await api('/api/stop', { mandate: id, reason: $('#stop-' + id)?.value || '' }); delete ui['d-' + id]; }
+    if (act === 'resume') { const r = await api('/api/resume', { mandate: id }); if (r.id) ui[r.id] = { mode: 'yes' }; }
     if (act === 'resolveform') return set('i-' + id, { mode: 'resolve' });
+    if (act === 'tpl') { ui.new = { ...(ui.new || {}), idea: TEMPLATES[+id][1] }; return render(true); }
+    if (act === 'who') { ui.new = { ...(ui.new || {}), idea: $('#idea')?.value ?? ui.new?.idea, who: id }; return render(true); }
+    if (act === 'blank') { ui.new = { ...(ui.new || {}), idea: $('#idea')?.value || '', draft: { title: '', goal: $('#idea')?.value || '', needs_yes: [], days: 30, check_in: 'none', kind: 'one-off' } }; return render(true); }
+    if (act === 'restartnew') { ui.new = { who: 'agent', idea: ui.new?.idea || '' }; return render(true); }
+    if (act === 'draft') {
+      const idea = $('#idea').value; ui.new = { ...(ui.new || {}), idea, busy: true, err: '' }; render(true);
+      try { const d = await api('/api/draft', { idea, who: ui.new.who }); ui.new = { ...ui.new, busy: false, draft: d }; } catch (e) { ui.new = { ...ui.new, busy: false, err: e.message }; }
+      return render(true);
+    }
+    if (act === 'create') {
+      const draft = readDraft(); const pw = $('#d-pw')?.value || '';
+      ui.new = { ...ui.new, draft, busy: true, err: '' }; render(true);
+      try { const r = await api('/api/mandate/create', { draft, passphrase: pw, start: id === 'start' }); ui.new = { who: 'agent', idea: '' }; location.hash = 'm-' + r.name; await refresh(true); }
+      catch (e) { ui.new = { ...ui.new, busy: false, err: e.message.replace(/^wrong passphrase.*/i, 'Wrong passphrase: nothing was started.') }; render(true); }
+      return;
+    }
+    if (act === 'mstart') { await api('/api/mandate/start', { mandate: id, passphrase: $('#pw-d-' + id)?.value || '' }); delete ui['d-' + id]; }
+    if (act === 'restartform') return set('d-' + id, { mode: 'restart' });
+    if (act === 'mdone') { await api('/api/mandate/done', { mandate: id, note: '' }); }
     if (act === 'login') { await api('/api/login', {}); return set('task', { login: true }); }
     if (act === 'run') {
       const text = $('#task-text').value, mandate = $('#task-mandate').value;
@@ -393,7 +489,7 @@ async function run(act, id) {
     document.activeElement?.blur();
     await refresh(true);
   } catch (e) {
-    const k = ['sign', 'decline'].includes(act) ? id : ['stop', 'open', 'resume'].includes(act) ? 'm-' + id : act === 'resolve' ? 'i-' + id : ['run', 'login'].includes(act) ? 'task' : act.startsWith('run') ? 'run-' + id : id;
+    const k = ['sign', 'decline'].includes(act) ? id : ['stop', 'open', 'resume', 'mstart', 'mdone'].includes(act) ? 'd-' + id : act === 'resolve' ? 'i-' + id : ['run', 'login'].includes(act) ? 'task' : act.startsWith('run') ? 'run-' + id : id;
     ui[k] = { ...(ui[k] || {}), err: e.message.replace(/^wrong passphrase.*/i, 'Wrong passphrase: nothing was recorded.') };
     render(true);
   }
@@ -401,7 +497,7 @@ async function run(act, id) {
 
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) { e.preventDefault(); run(b.dataset.act, b.dataset.id); } });
 document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.dataset.enter) { e.preventDefault(); run(e.target.dataset.enter, e.target.dataset.id); } if (e.key === 'Escape' && e.target.matches('input')) { e.target.blur(); } });
-const route = () => { const v = location.hash.slice(1); if (VIEWS[v]) { view = v; render(true); } };
+const route = () => { const v = location.hash.slice(1); if (v.startsWith('m-')) { view = 'detail'; arg = v.slice(2); render(true); } else if (VIEWS[v] && v !== 'detail') { view = v; render(true); } };
 window.addEventListener('hashchange', route);
 route();
 refresh(true);

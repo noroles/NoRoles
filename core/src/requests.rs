@@ -150,6 +150,18 @@ pub fn stop(dir: &Path, mandate: &str, asker: &str, reason: &str, now: i64) -> R
     Ok(r)
 }
 
+/// The holder marks a mandate done: it leaves the board's work columns and nothing lasting runs in it.
+pub fn close(dir: &Path, mandate: &str, asker: &str, note: &str, now: i64) -> R<V> {
+    let mut c = load(dir)?;
+    let m = c.mandate(mandate).ok_or_else(|| format!("no mandate \"{mandate}\""))?.clone();
+    if s(&m, "holder") != Some(asker) && !c.root.iter().any(|x| x == asker) { return Err(format!("only {} or root can mark {mandate} done", s(&m, "holder").unwrap_or(""))); }
+    let mut r = base("close", V::from(mandate), vec![], asker, json!({ "summary": if note.trim().is_empty() { "done" } else { note } }), now);
+    r["status"] = V::from("approved");
+    save(&mut c, &r)?;
+    commit(dir, &format!("done {mandate} by {asker}"), false)?;
+    Ok(r)
+}
+
 /// Only the mandate's holder (or root) can undo a stop.
 pub fn resume(dir: &Path, mandate: &str, asker: &str, now: i64) -> R<V> {
     let mut c = load(dir)?;

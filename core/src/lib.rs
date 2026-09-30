@@ -1,5 +1,6 @@
 //! NoRoles: permissions instead of roles, for people and AI agents. https://noroles.com
 #![allow(dead_code)]
+pub mod board;
 pub mod company;
 pub mod flags;
 pub mod hook;

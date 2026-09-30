@@ -116,6 +116,12 @@ fn spawn_claude(dir: PathBuf, id: String, prompt: String, resume: bool) -> Resul
             if !err.trim().is_empty() { m["stderr"] = V::from(err.chars().rev().take(2000).collect::<String>().chars().rev().collect::<String>()); }
             m["ended"] = V::from(iso(now_ms()));
             write_meta(&dir, &m);
+            // tell the person what came of it, in the agent's first line
+            let raw = fs::read_to_string(log_path(&dir, &id)).unwrap_or_default();
+            let result = raw.lines().rev().filter_map(|l| serde_json::from_str::<V>(l).ok()).find(|e| s(e, "type") == Some("result")).and_then(|e| s(&e, "result").map(String::from)).unwrap_or_default();
+            let first = result.lines().map(|l| l.trim().trim_start_matches(['#', '*', ' '])).find(|l| !l.is_empty()).unwrap_or(if code == 0 { "Finished" } else { "Stopped with an error" }).to_string();
+            let waits = raw.contains("needs a yes");
+            crate::notify::notify(&format!("NoRoles · {}", s(&m, "mandate").unwrap_or("")), &first, waits || code != 0);
         }
     });
     Ok(())
